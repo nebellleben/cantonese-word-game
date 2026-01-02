@@ -15,6 +15,8 @@ Backend:
 
 ## Points for brainstorming:
 
+Each point below is a stage of implementation. You are required to run each stage and show the output, refine it based on my further input, and ask for permission to the next stage
+
 - Frontend
 >create the snake game with two models: pass-through and walls. prepare to make it multiplayers - we will have this functionality: leaderboard and watching (me following other players that currently play). add mockups for that and also for log in. everything should be interactive - I can log in, sign up, see my username when I'm logged in, see leaderboard, see other people play (in this case just implement some playing logic yourself as if somebody is playing) make sure that all the logic is covered with tests
 >don't implement backend, so everything is mocked. But centralize all the calls to the backend in one place
@@ -38,3 +40,5 @@ Backend:
 >I want to create a CI/CD pipeline with github actions with two parts
 > - first we run tests (frontend + backend)
 > - if tests pass, I want to deploy the update to render
+- Deployment
+> Deployment to AWS for web based applciation and frontend 
