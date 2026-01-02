@@ -1,0 +1,119 @@
+.statistics-page {
+  min-height: 100vh;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, #ff6b9d 0%, #c44569 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 8px 20px rgba(255, 107, 157, 0.3);
+  border: 3px solid #ffb6c1;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 12px 30px rgba(255, 107, 157, 0.4);
+}
+
+.stat-card .stat-value {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', sans-serif;
+}
+
+.stat-card .stat-label {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.wrong-words-list {
+  margin-top: 1rem;
+}
+
+.wrong-word-item {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  background: #fff5f7;
+  border-radius: 15px;
+  border-left: 5px solid #ff6b9d;
+  border: 3px solid #ffb6c1;
+  transition: transform 0.2s ease;
+}
+
+.wrong-word-item:hover {
+  transform: translateX(5px);
+  box-shadow: 0 4px 12px rgba(255, 107, 157, 0.2);
+}
+
+.word-rank {
+  font-weight: 800;
+  color: #ff6b9d;
+  margin-right: 1rem;
+  min-width: 40px;
+  font-size: 1.2rem;
+}
+
+.word-text {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #ff6b9d;
+  margin-right: 1rem;
+  flex: 1;
+  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', sans-serif;
+}
+
+.word-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.wrong-count {
+  font-weight: 700;
+  color: #ff6b9d;
+  font-size: 1rem;
+}
+
+.wrong-ratio {
+  font-size: 0.8rem;
+}
+
+.no-data {
+  text-align: center;
+  color: #666;
+  padding: 2rem;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .wrong-word-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .word-stats {
+    align-items: flex-start;
+    margin-top: 0.5rem;
+  }
+}
+

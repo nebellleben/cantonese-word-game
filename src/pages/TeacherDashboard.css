@@ -1,0 +1,138 @@
+.teacher-dashboard {
+  min-height: 100vh;
+}
+
+.tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 3px solid #ffb6c1;
+}
+
+.tab {
+  padding: 1rem 2rem;
+  border: none;
+  background: transparent;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #666;
+  cursor: pointer;
+  border-bottom: 4px solid transparent;
+  transition: all 0.3s ease;
+  border-radius: 15px 15px 0 0;
+  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', sans-serif;
+}
+
+.tab:hover {
+  color: #ff6b9d;
+  background: rgba(255, 182, 193, 0.2);
+  transform: translateY(-3px);
+}
+
+.tab.active {
+  color: #ff6b9d;
+  border-bottom-color: #ff6b9d;
+  background: rgba(255, 182, 193, 0.3);
+  font-weight: 800;
+}
+
+.student-stats {
+  margin-top: 2rem;
+}
+
+.chart-container {
+  margin-top: 2rem;
+}
+
+.chart-container h4 {
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.word-error-list {
+  margin-top: 1rem;
+}
+
+.word-error-item {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  background: #fff5f7;
+  border-radius: 15px;
+  border: 3px solid #ffb6c1;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.word-error-item:hover {
+  transform: translateX(5px);
+  box-shadow: 0 4px 12px rgba(255, 107, 157, 0.2);
+}
+
+.word-rank {
+  font-weight: 800;
+  color: #ff6b9d;
+  margin-right: 1rem;
+  min-width: 50px;
+  font-size: 1.2rem;
+}
+
+.word-text {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #ff6b9d;
+  margin-right: 1rem;
+  min-width: 100px;
+  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', sans-serif;
+}
+
+.error-ratio {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ratio-bar {
+  flex: 1;
+  height: 20px;
+  background: #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ratio-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff6b9d 0%, #c44569 100%);
+  transition: width 0.3s ease;
+  border-radius: 10px;
+}
+
+.ratio-text {
+  font-size: 0.9rem;
+  color: #666;
+  min-width: 120px;
+  text-align: right;
+}
+
+@media (max-width: 768px) {
+  .tabs {
+    flex-direction: column;
+  }
+
+  .word-error-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .error-ratio {
+    width: 100%;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .ratio-text {
+    text-align: left;
+  }
+}
+
