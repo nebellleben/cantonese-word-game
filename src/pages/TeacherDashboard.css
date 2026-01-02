@@ -1,0 +1,122 @@
+.teacher-dashboard {
+  min-height: 100vh;
+}
+
+.tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.tab {
+  padding: 1rem 2rem;
+  border: none;
+  background: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: #667eea;
+}
+
+.tab.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+}
+
+.student-stats {
+  margin-top: 2rem;
+}
+
+.chart-container {
+  margin-top: 2rem;
+}
+
+.chart-container h4 {
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.word-error-list {
+  margin-top: 1rem;
+}
+
+.word-error-item {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.word-rank {
+  font-weight: bold;
+  color: #667eea;
+  margin-right: 1rem;
+  min-width: 50px;
+}
+
+.word-text {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+  margin-right: 1rem;
+  min-width: 100px;
+}
+
+.error-ratio {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ratio-bar {
+  flex: 1;
+  height: 20px;
+  background: #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ratio-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff6b6b 0%, #dc3545 100%);
+  transition: width 0.3s ease;
+}
+
+.ratio-text {
+  font-size: 0.9rem;
+  color: #666;
+  min-width: 120px;
+  text-align: right;
+}
+
+@media (max-width: 768px) {
+  .tabs {
+    flex-direction: column;
+  }
+
+  .word-error-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .error-ratio {
+    width: 100%;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .ratio-text {
+    text-align: left;
+  }
+}
+

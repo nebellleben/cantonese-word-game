@@ -1,0 +1,26 @@
+.student-dashboard {
+  min-height: 100vh;
+}
+
+.btn-large {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  margin-top: 1rem;
+}
+
+.deck-select {
+  font-size: 1rem;
+}
+
+.deck-description {
+  margin-top: 0.5rem;
+  color: #666;
+  font-style: italic;
+}
+
+.user-info {
+  color: #333;
+  font-weight: 500;
+}
+

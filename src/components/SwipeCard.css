@@ -1,0 +1,64 @@
+.swipe-card {
+  width: 100%;
+  max-width: 500px;
+  height: 400px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+  margin: 0 auto;
+  position: relative;
+}
+
+.swipe-card.dragging {
+  cursor: grabbing;
+  transition: none;
+}
+
+.swipe-card.disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.card-content {
+  text-align: center;
+  padding: 2rem;
+}
+
+.word-display {
+  font-size: 4rem;
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 2rem;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-hint {
+  font-size: 0.875rem;
+  color: #888;
+  margin-top: 2rem;
+}
+
+.card-hint p {
+  margin: 0.5rem 0;
+}
+
+@media (max-width: 768px) {
+  .swipe-card {
+    height: 350px;
+    max-width: 90%;
+  }
+
+  .word-display {
+    font-size: 3rem;
+  }
+}
+
