@@ -1,8 +1,19 @@
 # cantonese-word-game
 Cantonese Word Game Created for the AI Development Tools Zoomcamp Capstone Project
 
+## Description of the project:
 
-Points for brainstorming:
+Frontend:
+- Swipe card style that can operate on both desktop and mobile
+- Each game is a timed exercise, a list of 10 words appear each at a time, and the student is required to pronounce the word in Cantonese within a configurable time limit
+- The score is based on the response time and whether the word is correctly pronounced
+- At the end of each game, the score is shown based on the numbers of words correcly shown
+- An n-day streak is award to the user for n consecutive days of completing exercises 
+Backend:
+- It has an engine for recognizing Cantonese words using a high fidelity 
+- It allows for creation and log-in of accounts for a personal profile, store progress, accumulate points and streaks, and identification of weak areas for further practice
+
+## Points for brainstorming:
 
 - Frontend
 >create the snake game with two models: pass-through and walls. prepare to make it multiplayers - we will have this functionality: leaderboard and watching (me following other players that currently play). add mockups for that and also for log in. everything should be interactive - I can log in, sign up, see my username when I'm logged in, see leaderboard, see other people play (in this case just implement some playing logic yourself as if somebody is playing) make sure that all the logic is covered with tests
