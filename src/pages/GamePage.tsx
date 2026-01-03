@@ -59,21 +59,31 @@ const GamePage: React.FC = () => {
     }
   };
 
-  // Audio level monitoring
+  // Audio level monitoring - use time domain data for accurate volume
   useEffect(() => {
     if (!isRecording || !audioContextRef.current || !analyserRef.current) {
+      setAudioLevel(0);
       return;
     }
 
     const updateAudioLevel = () => {
       if (!analyserRef.current) return;
 
-      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-      analyserRef.current.getByteFrequencyData(dataArray);
+      // Use time domain data for accurate volume/amplitude measurement
+      const bufferLength = analyserRef.current.fftSize;
+      const dataArray = new Uint8Array(bufferLength);
+      analyserRef.current.getByteTimeDomainData(dataArray);
       
-      // Calculate average volume
-      const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-      const normalizedLevel = Math.min(average / 128, 1); // Normalize to 0-1
+      // Calculate RMS (Root Mean Square) for accurate volume
+      let sum = 0;
+      for (let i = 0; i < bufferLength; i++) {
+        const normalized = (dataArray[i] - 128) / 128;
+        sum += normalized * normalized;
+      }
+      const rms = Math.sqrt(sum / bufferLength);
+      
+      // Normalize to 0-1 and apply smoothing
+      const normalizedLevel = Math.min(rms * 2, 1); // Multiply by 2 for better sensitivity
       setAudioLevel(normalizedLevel);
 
       animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
@@ -88,13 +98,100 @@ const GamePage: React.FC = () => {
     };
   }, [isRecording]);
 
-  // Clear feedback when moving to next word
+  // Clear feedback and recognition when moving to next word
   useEffect(() => {
     if (currentWordIndex >= 0) {
       setLastFeedback(null);
       setShowFeedback(false);
+      setRealTimeRecognition('');
     }
   }, [currentWordIndex]);
+
+  // Web Speech API for real-time recognition
+  useEffect(() => {
+    if (!isRecording) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+      }
+      setRealTimeRecognition('');
+      return;
+    }
+
+    // Check if browser supports Web Speech API
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.log('Web Speech API not supported in this browser');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'zh-HK'; // Try Cantonese (Hong Kong), fallback to zh-CN if not available
+
+    recognition.onresult = (event: any) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+
+      // Show both interim and final results
+      const displayText = finalTranscript || interimTranscript;
+      if (displayText) {
+        setRealTimeRecognition(displayText);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      // If language not supported, try Chinese
+      if (event.error === 'language-not-supported' && recognition.lang === 'zh-HK') {
+        recognition.lang = 'zh-CN';
+        try {
+          recognition.start();
+        } catch (e) {
+          console.log('Speech recognition not available');
+        }
+      }
+    };
+
+    recognition.onend = () => {
+      // Restart if still recording
+      if (isRecording) {
+        try {
+          recognition.start();
+        } catch (e) {
+          // Already started or error
+        }
+      }
+    };
+
+    recognitionRef.current = recognition;
+    try {
+      recognition.start();
+    } catch (e) {
+      console.log('Could not start speech recognition:', e);
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // Already stopped
+        }
+        recognitionRef.current = null;
+      }
+    };
+  }, [isRecording]);
 
   // Cleanup audio context on unmount
   useEffect(() => {
@@ -124,6 +221,7 @@ const GamePage: React.FC = () => {
       setLastFeedback(null);
       setShowFeedback(false);
       setAudioLevel(0);
+      setRealTimeRecognition('');
       
       // Request microphone access
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -165,15 +263,14 @@ const GamePage: React.FC = () => {
             responseTime,
           });
 
-          // Show feedback immediately with comparison details
+          // Show feedback immediately - use real-time recognition if available, otherwise use backend feedback
           setLastFeedback({
             isCorrect: result.isCorrect,
             feedback: result.feedback,
-            recognizedText: result.recognizedText,
-            expectedText: result.expectedText,
-            expectedJyutping: result.expectedJyutping,
+            recognizedText: realTimeRecognition || result.feedback || '',
           });
           setShowFeedback(true);
+          setRealTimeRecognition(''); // Clear real-time recognition after showing feedback
 
           // Update session
           const updatedWords = [...session.words];
@@ -220,15 +317,14 @@ const GamePage: React.FC = () => {
           responseTime,
         });
 
-        // Show feedback immediately with comparison details
+        // Show feedback immediately - use real-time recognition if available, otherwise use backend feedback
         setLastFeedback({
           isCorrect: result.isCorrect,
           feedback: result.feedback,
-          recognizedText: result.recognizedText,
-          expectedText: result.expectedText,
-          expectedJyutping: result.expectedJyutping,
+          recognizedText: realTimeRecognition || result.feedback || '',
         });
         setShowFeedback(true);
+        setRealTimeRecognition(''); // Clear real-time recognition after showing feedback
 
         const updatedWords = [...session.words];
         updatedWords[currentWordIndex] = {
@@ -360,6 +456,7 @@ const GamePage: React.FC = () => {
           disabled={isRecording}
           showFeedback={showFeedback}
           feedback={lastFeedback}
+          realTimeRecognition={isRecording ? realTimeRecognition : ''}
         />
 
         {/* Volume Bar */}

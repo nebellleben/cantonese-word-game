@@ -71,6 +71,7 @@ const translations: Record<Language, Record<string, string>> = {
     'pronunciationCorrect': 'Correct!',
     'pronunciationIncorrect': 'Incorrect',
     'recognizedAs': 'Recognized as',
+    'recognizing': 'Recognizing',
     
     // Statistics Page
     'statistics': 'Statistics',
@@ -188,6 +189,7 @@ const translations: Record<Language, Record<string, string>> = {
     'pronunciationCorrect': '正確！',
     'pronunciationIncorrect': '錯誤',
     'recognizedAs': '識別為',
+    'recognizing': '識別中',
     
     // Statistics Page
     'statistics': '統計',
