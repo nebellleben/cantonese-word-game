@@ -72,6 +72,29 @@ const GamePage: React.FC = () => {
     startGame();
   }, [startGame]);
 
+  // Check browser compatibility on mount (but don't show error until user tries to record)
+  useEffect(() => {
+    // Check if MediaRecorder is supported
+    if (typeof MediaRecorder === 'undefined') {
+      console.warn('MediaRecorder is not supported in this browser');
+    }
+
+    // Check if getUserMedia is supported
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      console.warn('getUserMedia is not supported in this browser');
+    }
+
+    // Check if we're on HTTPS or localhost (required for getUserMedia)
+    const isSecureContext = window.isSecureContext || 
+      window.location.protocol === 'https:' || 
+      window.location.hostname === 'localhost' || 
+      window.location.hostname === '127.0.0.1';
+    
+    if (!isSecureContext) {
+      console.warn('getUserMedia requires HTTPS or localhost');
+    }
+  }, []);
+
   // Audio level monitoring - use time domain data for accurate volume
   useEffect(() => {
     if (!isRecording || !audioContextRef.current || !analyserRef.current) {
@@ -118,6 +141,7 @@ const GamePage: React.FC = () => {
       setShowFeedback(false);
       setRealTimeRecognition('');
       setIsPlaying(false);
+      setError(''); // Clear any errors
       shouldStopRecognitionRef.current = false; // Reset stop flag for next word
       
       // Stop and cleanup audio player
@@ -290,8 +314,24 @@ const GamePage: React.FC = () => {
       setIsRecording(true);
       setLastFeedback(null);
       setShowFeedback(false);
+      setError(''); // Clear any previous errors
       setAudioLevel(0);
       setRealTimeRecognition('');
+      
+      // Stop any ongoing audio playback
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current = null;
+        setIsPlaying(false);
+      }
+      
+      // Clear previous recording data
+      setRecordedAudioBlob(null);
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+        audioUrlRef.current = null;
+      }
+      setAudioUrl(null);
       
       // Request microphone access
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -308,9 +348,16 @@ const GamePage: React.FC = () => {
       audioContextRef.current = audioContext;
       analyserRef.current = analyser;
 
+      // Create a fresh audioChunks array for this recording session
       const audioChunks: Blob[] = [];
+      
+      // Store stream reference for cleanup
+      const streamRef = stream;
+      
       mediaRecorder.ondataavailable = (event) => {
-        audioChunks.push(event.data);
+        if (event.data && event.data.size > 0) {
+          audioChunks.push(event.data);
+        }
       };
 
       mediaRecorder.onstop = async () => {
@@ -338,17 +385,47 @@ const GamePage: React.FC = () => {
         analyserRef.current = null;
         setAudioLevel(0);
 
+        // Check if we actually have audio data
+        if (audioChunks.length === 0) {
+          console.error('No audio data recorded');
+          // Stop all media tracks
+          streamRef.getTracks().forEach((track) => track.stop());
+          setError(t('recordingFailed') || 'Recording failed. Please try again.');
+          return;
+        }
+
+        // Create a fresh blob from the chunks
         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        
+        // Verify blob has data
+        if (audioBlob.size === 0) {
+          console.error('Audio blob is empty');
+          // Stop all media tracks
+          streamRef.getTracks().forEach((track) => track.stop());
+          setError(t('recordingFailed') || 'Recording failed. Please try again.');
+          return;
+        }
+
+        console.log('Recording complete:', { 
+          chunks: audioChunks.length, 
+          blobSize: audioBlob.size,
+          wordIndex: currentWordIndex 
+        });
+
         const responseTime = Date.now() - startTimeRef.current;
 
-        // Store audio blob for playback
-        setRecordedAudioBlob(audioBlob);
-        // Clean up previous URL if exists
+        // Clean up previous audio URL and blob before creating new ones
         if (audioUrlRef.current) {
           URL.revokeObjectURL(audioUrlRef.current);
+          audioUrlRef.current = null;
         }
+        setRecordedAudioBlob(null);
+        setAudioUrl(null);
+        
+        // Create new audio URL for this recording
         const url = URL.createObjectURL(audioBlob);
         audioUrlRef.current = url;
+        setRecordedAudioBlob(audioBlob);
         setAudioUrl(url);
 
         try {
@@ -383,13 +460,35 @@ const GamePage: React.FC = () => {
           // Don't auto-advance - user will click Next button
         } catch (err) {
           console.error('Failed to submit pronunciation:', err);
+          setError(t('submissionFailed') || 'Failed to submit pronunciation. Please try again.');
         } finally {
           // Stop all media tracks
-          stream.getTracks().forEach((track) => track.stop());
+          streamRef.getTracks().forEach((track) => track.stop());
         }
       };
 
-      mediaRecorder.start();
+      // Handle MediaRecorder errors
+      mediaRecorder.onerror = (event: any) => {
+        console.error('MediaRecorder error:', event);
+        setIsRecording(false);
+        setAudioLevel(0);
+        setError(t('recordingError') || 'An error occurred during recording. Please try again.');
+        // Stop all media tracks
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      // Start recording with timeslice to ensure data is collected
+      // Using timeslice of 100ms to ensure data chunks are collected regularly
+      try {
+        mediaRecorder.start(100);
+      } catch (startErr) {
+        console.error('Failed to start MediaRecorder:', startErr);
+        setIsRecording(false);
+        setAudioLevel(0);
+        setError(t('recordingStartFailed') || 'Failed to start recording. Please try again.');
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       
       // Stop recording after 5 seconds (or user can stop manually)
       const autoStopTimeout = setTimeout(() => {
@@ -403,44 +502,44 @@ const GamePage: React.FC = () => {
       
       // Reset stop flag when starting new recording
       shouldStopRecognitionRef.current = false;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to access microphone:', err);
       setIsRecording(false);
       setAudioLevel(0);
       
-      // Fallback: submit without audio (for testing)
-      const responseTime = Date.now() - startTimeRef.current;
-      try {
-        const result = await apiClient.submitPronunciation({
-          sessionId: session.id,
-          wordId: session.words[currentWordIndex].wordId,
-          responseTime,
-        });
-
-          // Show feedback immediately with comparison details
-          setLastFeedback({
-            isCorrect: result.isCorrect,
-            feedback: result.feedback,
-            recognizedText: result.recognizedText,
-            expectedText: result.expectedText,
-            expectedJyutping: result.expectedJyutping,
-          });
-        setShowFeedback(true);
-        setRealTimeRecognition(''); // Clear real-time recognition after showing feedback
-
-        const updatedWords = [...session.words];
-        updatedWords[currentWordIndex] = {
-          ...updatedWords[currentWordIndex],
-          isCorrect: result.isCorrect,
-          responseTime,
-        };
-
-        setSession({ ...session, words: updatedWords });
-
-        // Don't auto-advance - user will click Next button
-      } catch (submitErr) {
-        console.error('Failed to submit pronunciation:', submitErr);
+      // Check if browser supports getUserMedia
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError(t('browserNotSupported') || 'Your browser does not support audio recording. Please use a modern browser like Chrome, Firefox, or Safari.');
+        return;
       }
+      
+      // Check if we're on HTTPS or localhost (required for getUserMedia)
+      const isSecureContext = window.isSecureContext || 
+        window.location.protocol === 'https:' || 
+        window.location.hostname === 'localhost' || 
+        window.location.hostname === '127.0.0.1';
+      
+      if (!isSecureContext) {
+        setError(t('httpsRequired') || 'Microphone access requires HTTPS. Please access this site over HTTPS or use localhost.');
+        return;
+      }
+      
+      // Provide specific error messages based on error type
+      let errorMessage = t('microphoneAccessFailed') || 'Failed to access microphone. Please check your permissions and try again.';
+      
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        errorMessage = t('microphonePermissionDenied') || 'Microphone permission was denied. Please allow microphone access in your browser settings and try again.';
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        errorMessage = t('microphoneNotFound') || 'No microphone found. Please connect a microphone and try again.';
+      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        errorMessage = t('microphoneInUse') || 'Microphone is already in use by another application. Please close other applications using the microphone and try again.';
+      } else if (err.name === 'OverconstrainedError') {
+        errorMessage = t('microphoneConstraintsError') || 'Microphone constraints could not be satisfied. Please try a different microphone.';
+      } else if (err.message) {
+        errorMessage = `${t('microphoneAccessFailed') || 'Failed to access microphone'}: ${err.message}`;
+      }
+      
+      setError(errorMessage);
     }
   };
 
@@ -461,7 +560,7 @@ const GamePage: React.FC = () => {
   };
 
   const handlePlayRecording = () => {
-    if (!audioUrl) return;
+    if (!audioUrl || !recordedAudioBlob) return;
 
     // Clean up previous audio if exists
     if (audioPlayerRef.current) {
@@ -469,16 +568,20 @@ const GamePage: React.FC = () => {
       audioPlayerRef.current = null;
     }
 
-    // Create new audio element
+    // Create new audio element from the current audio URL
     const audio = new Audio(audioUrl);
     audioPlayerRef.current = audio;
 
-    audio.onplay = () => setIsPlaying(true);
+    audio.onplay = () => {
+      console.log('Playing audio:', { url: audioUrl, blobSize: recordedAudioBlob.size });
+      setIsPlaying(true);
+    };
     audio.onended = () => {
       setIsPlaying(false);
       audioPlayerRef.current = null;
     };
-    audio.onerror = () => {
+    audio.onerror = (err) => {
+      console.error('Audio playback error:', err);
       setIsPlaying(false);
       audioPlayerRef.current = null;
     };
@@ -587,6 +690,17 @@ const GamePage: React.FC = () => {
       </div>
 
       <div className="game-content">
+        {error && (
+          <div className="error-message" style={{ marginBottom: '1rem' }}>
+            {error}
+            <button 
+              onClick={() => setError('')} 
+              style={{ marginLeft: '1rem', padding: '0.25rem 0.5rem', fontSize: '0.9rem' }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
         <SwipeCard
           word={currentWord.text}
           onSwipe={handleSwipe}
@@ -625,20 +739,40 @@ const GamePage: React.FC = () => {
         <div className="game-actions">
           {!showFeedback ? (
             <>
-              <button
-                onClick={handleRecord}
-                className={`btn btn-primary btn-record ${isRecording ? 'recording' : ''}`}
-                disabled={showFeedback}
-              >
-                {isRecording ? `🎤 ${t('recording')}` : `🎤 ${t('recordPronunciation')}`}
-              </button>
-              <button
-                onClick={handleSwipe.bind(null, 'left')}
-                className="btn btn-secondary"
-                disabled={isRecording || showFeedback}
-              >
-                ⏭️ {t('skipWord')}
-              </button>
+              {isRecording ? (
+                <>
+                  <button
+                    onClick={handleRecord}
+                    className="btn btn-primary btn-record recording"
+                  >
+                    ⏹️ {t('stopRecording')}
+                  </button>
+                  <button
+                    onClick={handleSwipe.bind(null, 'left')}
+                    className="btn btn-secondary"
+                    disabled={true}
+                  >
+                    ⏭️ {t('skipWord')}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={handleRecord}
+                    className="btn btn-primary btn-record"
+                    disabled={showFeedback}
+                  >
+                    🎤 {t('recordPronunciation')}
+                  </button>
+                  <button
+                    onClick={handleSwipe.bind(null, 'left')}
+                    className="btn btn-secondary"
+                    disabled={isRecording || showFeedback}
+                  >
+                    ⏭️ {t('skipWord')}
+                  </button>
+                </>
+              )}
             </>
           ) : (
             <button
