@@ -231,7 +231,7 @@ const GamePage: React.FC = () => {
 
       <div className="game-content">
         <SwipeCard
-          word={currentWord.word}
+          word={currentWord.text}
           onSwipe={handleSwipe}
           onComplete={handleRecord}
           disabled={isRecording}

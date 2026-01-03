@@ -1,0 +1,739 @@
+openapi: 3.0.3
+info:
+  title: Cantonese Word Game API
+  version: 1.0.0
+  description: API for Cantonese Word Game - A pronunciation learning game for primary school students
+
+servers:
+  - url: http://localhost:8000/api
+    description: Local development server
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /decks:
+    get:
+      tags:
+        - Decks
+      summary: Get all available decks
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of decks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Deck'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /decks/{deckId}/words:
+    get:
+      tags:
+        - Decks
+      summary: Get words in a deck
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deckId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of words
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Word'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Deck not found
+
+  /games/start:
+    post:
+      tags:
+        - Games
+      summary: Start a new game session
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartGameRequest'
+      responses:
+        '201':
+          description: Game session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameSession'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Deck not found
+
+  /games/pronunciation:
+    post:
+      tags:
+        - Games
+      summary: Submit pronunciation attempt
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - sessionId
+                - wordId
+                - responseTime
+              properties:
+                sessionId:
+                  type: string
+                  format: uuid
+                wordId:
+                  type: string
+                  format: uuid
+                responseTime:
+                  type: number
+                audio:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Pronunciation evaluation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PronunciationResponse'
+        '401':
+          description: Unauthorized
+        '400':
+          description: Invalid request
+
+  /games/{sessionId}/end:
+    post:
+      tags:
+        - Games
+      summary: End game session
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Game session ended with final score
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameSession'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Session not found
+
+  /statistics:
+    get:
+      tags:
+        - Statistics
+      summary: Get game statistics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: deckId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Game statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameStatistics'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /students:
+    get:
+      tags:
+        - Statistics
+      summary: Get list of students
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of students
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Student'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (students cannot access)
+
+  /words/error-ratios:
+    get:
+      tags:
+        - Statistics
+      summary: Get word error ratios
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of words with error ratios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WrongWord'
+        '401':
+          description: Unauthorized
+
+  /admin/decks:
+    post:
+      tags:
+        - Admin
+      summary: Create a new deck
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDeckRequest'
+      responses:
+        '201':
+          description: Deck created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Deck'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (admin only)
+
+  /admin/decks/{deckId}:
+    delete:
+      tags:
+        - Admin
+      summary: Delete a deck
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deckId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deck deleted
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Deck not found
+
+  /admin/decks/{deckId}/words:
+    post:
+      tags:
+        - Admin
+      summary: Add a word to a deck
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deckId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWordRequest'
+      responses:
+        '201':
+          description: Word created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Word'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Deck not found
+
+  /admin/words/{wordId}:
+    delete:
+      tags:
+        - Admin
+      summary: Delete a word
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: wordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Word deleted
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Word not found
+
+  /admin/associations:
+    post:
+      tags:
+        - Admin
+      summary: Associate student with teacher
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssociationRequest'
+      responses:
+        '204':
+          description: Association created
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: User not found
+
+  /admin/users/{userId}/reset-password:
+    post:
+      tags:
+        - Admin
+      summary: Reset user password
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '204':
+          description: Password reset
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: User not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        role:
+          type: string
+          enum: [student, teacher, admin]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - username
+        - role
+        - createdAt
+
+    Deck:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - createdAt
+
+    Word:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        text:
+          type: string
+        jyutping:
+          type: string
+        deckId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - text
+        - jyutping
+        - deckId
+        - createdAt
+
+    GameSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        deckId:
+          type: string
+          format: uuid
+        words:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameWord'
+        score:
+          type: number
+          nullable: true
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - userId
+        - deckId
+        - words
+        - startedAt
+
+    GameWord:
+      type: object
+      properties:
+        wordId:
+          type: string
+          format: uuid
+        text:
+          type: string
+        isCorrect:
+          type: boolean
+          nullable: true
+        responseTime:
+          type: number
+          nullable: true
+      required:
+        - wordId
+
+    GameStatistics:
+      type: object
+      properties:
+        totalGames:
+          type: number
+        averageScore:
+          type: number
+        bestScore:
+          type: number
+        currentStreak:
+          type: number
+        longestStreak:
+          type: number
+        scoresByDate:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoreByDate'
+        topWrongWords:
+          type: array
+          items:
+            $ref: '#/components/schemas/WrongWord'
+      required:
+        - totalGames
+        - averageScore
+        - bestScore
+        - currentStreak
+        - longestStreak
+        - scoresByDate
+        - topWrongWords
+
+    ScoreByDate:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        score:
+          type: number
+      required:
+        - date
+        - score
+
+    Student:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        streak:
+          type: number
+        totalScore:
+          type: number
+      required:
+        - id
+        - username
+        - streak
+        - totalScore
+
+    WrongWord:
+      type: object
+      properties:
+        wordId:
+          type: string
+          format: uuid
+        text:
+          type: string
+        errorCount:
+          type: number
+        totalAttempts:
+          type: number
+        errorRatio:
+          type: number
+      required:
+        - wordId
+        - text
+        - errorCount
+        - totalAttempts
+        - errorRatio
+
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required:
+        - username
+        - password
+
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [student, teacher]
+      required:
+        - username
+        - password
+        - role
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+        - token
+        - user
+
+    StartGameRequest:
+      type: object
+      properties:
+        deckId:
+          type: string
+          format: uuid
+      required:
+        - deckId
+
+    PronunciationResponse:
+      type: object
+      properties:
+        isCorrect:
+          type: boolean
+        feedback:
+          type: string
+      required:
+        - isCorrect
+
+    CreateDeckRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+      required:
+        - name
+
+    CreateWordRequest:
+      type: object
+      properties:
+        text:
+          type: string
+      required:
+        - text
+
+    AssociationRequest:
+      type: object
+      properties:
+        studentId:
+          type: string
+          format: uuid
+        teacherId:
+          type: string
+          format: uuid
+      required:
+        - studentId
+        - teacherId
+
+    ResetPasswordRequest:
+      type: object
+      properties:
+        password:
+          type: string
+      required:
+        - password
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+

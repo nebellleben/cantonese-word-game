@@ -51,7 +51,7 @@
   align-items: center;
   justify-content: center;
   text-shadow: 3px 3px 6px rgba(255, 107, 157, 0.3);
-  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', sans-serif;
+  font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'WenQuanYi Micro Hei', 'Noto Sans CJK SC', 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', sans-serif;
   animation: pulse 2s ease-in-out infinite;
 }
 

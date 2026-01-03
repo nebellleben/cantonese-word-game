@@ -48,10 +48,10 @@ export interface GameSession {
 
 export interface GameWord {
   wordId: string;
-  word: string;
-  responseTime: number;
-  isCorrect: boolean;
-  timestamp: string;
+  text: string;
+  responseTime?: number;
+  isCorrect?: boolean;
+  timestamp?: string;
 }
 
 export interface GameStatistics {
