@@ -16,6 +16,7 @@ dependencies = [
     "pytest-asyncio>=0.21.1",
     "httpx>=0.25.2",
     "pycantonese>=3.0.0",
+    "faster-whisper>=1.0.0",
 ]
 
 [build-system]

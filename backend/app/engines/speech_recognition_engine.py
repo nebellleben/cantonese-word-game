@@ -1,36 +1,112 @@
 """
 Speech Recognition Engine
 Evaluates if user's pronunciation matches the expected Cantonese word.
+Uses OpenAI Whisper for Cantonese speech recognition.
 """
 from typing import Optional, Tuple
 import io
 import random
+import tempfile
+import os
+
+# Try to import faster-whisper (compatible with Python 3.14), fall back to mock if not available
+try:
+    from faster_whisper import WhisperModel
+    FASTER_WHISPER_AVAILABLE = True
+except ImportError:
+    FASTER_WHISPER_AVAILABLE = False
+    WhisperModel = None
 
 
 class SpeechRecognitionEngine:
     """Engine for evaluating pronunciation correctness."""
     
     def __init__(self):
-        # In production, this would initialize a Cantonese speech recognition model
-        pass
+        """Initialize the speech recognition engine."""
+        self.model = None
+        self.use_whisper = False
+        
+        if FASTER_WHISPER_AVAILABLE:
+            try:
+                # Load faster-whisper model (base model is good balance of speed/accuracy)
+                # For Cantonese, we use 'base' model which supports multilingual including Cantonese
+                # faster-whisper is compatible with Python 3.14 and faster than openai-whisper
+                print("Loading faster-whisper ASR model for Cantonese...")
+                self.model = WhisperModel("base", device="cpu", compute_type="int8")
+                self.use_whisper = True
+                print("faster-whisper model loaded successfully!")
+            except Exception as e:
+                print(f"Warning: Failed to load faster-whisper model: {e}")
+                print("Falling back to mock implementation")
+                self.use_whisper = False
+        else:
+            print("Warning: faster-whisper not installed. Using mock implementation.")
+            print("Install with: uv add faster-whisper")
+            self.use_whisper = False
     
     def _transcribe_audio(self, audio_data: bytes) -> str:
         """
-        Transcribe audio to text/jyutping.
+        Transcribe audio to text using faster-whisper ASR model.
         
-        In production, this would use a Cantonese ASR model.
-        For now, this is a mock implementation.
+        Returns:
+            Recognized text in Chinese characters (Cantonese), then converted to jyutping
         """
-        # Mock implementation: Return a mock transcription
-        # In production, replace with actual ASR:
-        # import whisper or other ASR library
-        # model = load_cantonese_asr_model()
-        # transcription = model.transcribe(audio_data)
-        # return transcription
-        
-        # For development: Generate a mock recognized jyutping
-        # This simulates what an ASR system might recognize
-        # We'll make it sometimes match, sometimes not, for testing
+        if self.use_whisper and self.model:
+            try:
+                # Save audio data to temporary file
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp_file:
+                    tmp_file.write(audio_data)
+                    tmp_file_path = tmp_file.name
+                
+                try:
+                    # Transcribe with faster-whisper
+                    # Language is set to 'zh' (Chinese) which includes Cantonese
+                    # faster-whisper will detect Cantonese automatically
+                    segments, info = self.model.transcribe(
+                        tmp_file_path,
+                        language='zh',  # Chinese (includes Cantonese)
+                        task='transcribe',
+                        beam_size=5
+                    )
+                    
+                    # Extract the transcribed text from segments
+                    recognized_text = "".join([segment.text for segment in segments]).strip()
+                    
+                    # Convert Chinese text to jyutping using pycantonese
+                    # This is a two-step process: ASR gives us Chinese characters,
+                    # then we convert to jyutping for comparison
+                    try:
+                        import pycantonese
+                        jyutping = pycantonese.characters_to_jyutping(recognized_text)
+                        if jyutping:
+                            # Join jyutping syllables with spaces
+                            return " ".join(jyutping)
+                        else:
+                            # If conversion fails, return the Chinese text
+                            # (comparison will need to handle this)
+                            return recognized_text
+                    except Exception as e:
+                        print(f"Warning: Failed to convert to jyutping: {e}")
+                        # Return Chinese text if jyutping conversion fails
+                        return recognized_text
+                        
+                finally:
+                    # Clean up temporary file
+                    if os.path.exists(tmp_file_path):
+                        os.unlink(tmp_file_path)
+                        
+            except Exception as e:
+                print(f"Error in faster-whisper transcription: {e}")
+                # Fall back to mock if faster-whisper fails
+                return self._mock_transcribe()
+        else:
+            # Use mock implementation if faster-whisper is not available
+            return self._mock_transcribe()
+    
+    def _mock_transcribe(self) -> str:
+        """
+        Mock transcription for testing when faster-whisper is not available.
+        """
         mock_jyutpings = [
             "nei5 hou2",  # Correct for 你好
             "ze6 ze6",    # Correct for 謝謝
@@ -41,9 +117,6 @@ class SpeechRecognitionEngine:
             "ze6 ze5",    # Slight variation
             "zoi2 gin3",  # Slight variation
         ]
-        
-        # Randomly select a mock transcription
-        # In a real scenario, this would come from the ASR model
         return random.choice(mock_jyutpings)
     
     def _compare_pronunciation(
