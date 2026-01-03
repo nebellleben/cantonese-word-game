@@ -9,7 +9,7 @@ import LanguageSwitcher from '../components/LanguageSwitcher';
 import './StatisticsPage.css';
 
 const StatisticsPage: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [statistics, setStatistics] = useState<GameStatistics | null>(null);

@@ -233,7 +233,8 @@ const AdminDashboard: React.FC = () => {
   }
 
   // All users for password management (students and teachers)
-  const allUsers = students.filter(u => u.role === 'student' || u.role === 'teacher');
+  // Note: In a real app, there would be separate endpoints for students and teachers
+  const allUsers = students;
 
   return (
     <div className="admin-dashboard">
@@ -407,14 +408,15 @@ const AdminDashboard: React.FC = () => {
                 value={selectedTeacherId}
                 onChange={(e) => setSelectedTeacherId(e.target.value)}
               >
-                {/* Filter students to show only teachers - in a real app, there would be a separate teachers endpoint */}
-                {students.filter(s => s.role === 'teacher').map((teacher) => (
-                  <option key={teacher.id} value={teacher.id}>
-                    {teacher.username}
+                {/* Note: In a real app, there would be a separate teachers endpoint */}
+                {/* For now, we'll show all users and let the backend validate */}
+                {students.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.username} ({user.role})
                   </option>
                 ))}
-                {students.filter(s => s.role === 'teacher').length === 0 && (
-                  <option value="">No teachers available</option>
+                {students.length === 0 && (
+                  <option value="">No users available</option>
                 )}
               </select>
             </div>

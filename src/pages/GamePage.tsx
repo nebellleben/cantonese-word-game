@@ -4,11 +4,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { apiClient } from '../services/api';
 import SwipeCard from '../components/SwipeCard';
-import type { GameSession, GameWord } from '../types';
+import type { GameSession } from '../types';
 import './GamePage.css';
 
 const GamePage: React.FC = () => {
-  const { user } = useAuth();
+  useAuth(); // Keep auth context active
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -38,6 +38,7 @@ const GamePage: React.FC = () => {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const recognitionRef = useRef<any>(null);
+  const shouldStopRecognitionRef = useRef<boolean>(false);
 
   const startGame = useCallback(async () => {
     if (!deckId) {
@@ -111,17 +112,25 @@ const GamePage: React.FC = () => {
       setLastFeedback(null);
       setShowFeedback(false);
       setRealTimeRecognition('');
+      shouldStopRecognitionRef.current = false; // Reset stop flag for next word
     }
   }, [currentWordIndex]);
 
   // Web Speech API for real-time recognition
   useEffect(() => {
-    if (!isRecording) {
+    if (!isRecording || showFeedback) {
+      // Stop recognition when not recording or when showing feedback
       if (recognitionRef.current) {
-        recognitionRef.current.stop();
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // Already stopped
+        }
         recognitionRef.current = null;
       }
-      setRealTimeRecognition('');
+      if (!isRecording) {
+        setRealTimeRecognition('');
+      }
       return;
     }
 
@@ -171,12 +180,22 @@ const GamePage: React.FC = () => {
     };
 
     recognition.onend = () => {
-      // Restart if still recording
-      if (isRecording) {
+      // Only restart if:
+      // 1. Still recording
+      // 2. Not showing feedback
+      // 3. Recognition ref still points to this instance
+      // 4. We haven't explicitly requested to stop
+      if (isRecording && !showFeedback && !shouldStopRecognitionRef.current && recognitionRef.current === recognition) {
         try {
           recognition.start();
         } catch (e) {
-          // Already started or error
+          // Already started or error - don't restart
+          console.log('Could not restart recognition:', e);
+        }
+      } else {
+        // Recognition should stop, clear the ref
+        if (recognitionRef.current === recognition) {
+          recognitionRef.current = null;
         }
       }
     };
@@ -189,7 +208,7 @@ const GamePage: React.FC = () => {
     }
 
     return () => {
-      if (recognitionRef.current) {
+      if (recognitionRef.current === recognition) {
         try {
           recognitionRef.current.stop();
         } catch (e) {
@@ -198,7 +217,7 @@ const GamePage: React.FC = () => {
         recognitionRef.current = null;
       }
     };
-  }, [isRecording]);
+  }, [isRecording, showFeedback]);
 
   // Cleanup audio context on unmount
   useEffect(() => {
@@ -217,8 +236,24 @@ const GamePage: React.FC = () => {
 
     // If already recording, stop it
     if (isRecording && mediaRecorderRef.current) {
+      // Set flag to prevent recognition from restarting
+      shouldStopRecognitionRef.current = true;
+      
+      // Clear auto-stop timeout if exists
+      if ((mediaRecorderRef.current as any)._autoStopTimeout) {
+        clearTimeout((mediaRecorderRef.current as any)._autoStopTimeout);
+      }
       if (mediaRecorderRef.current.state === 'recording') {
         mediaRecorderRef.current.stop();
+      }
+      // Stop Web Speech API recognition
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+          recognitionRef.current = null;
+        } catch (e) {
+          // Already stopped
+        }
       }
       return;
     }
@@ -251,6 +286,22 @@ const GamePage: React.FC = () => {
       };
 
       mediaRecorder.onstop = async () => {
+        // Set flag to prevent recognition from restarting
+        shouldStopRecognitionRef.current = true;
+        
+        // Stop Web Speech API recognition immediately
+        if (recognitionRef.current) {
+          try {
+            recognitionRef.current.stop();
+            recognitionRef.current = null;
+          } catch (e) {
+            // Already stopped
+          }
+        }
+        
+        // Set recording to false immediately to prevent recognition from restarting
+        setIsRecording(false);
+        
         // Clean up audio analysis
         if (audioContextRef.current) {
           audioContextRef.current.close();
@@ -270,11 +321,13 @@ const GamePage: React.FC = () => {
             responseTime,
           });
 
-          // Show feedback immediately - use real-time recognition if available, otherwise use backend feedback
+          // Show feedback immediately with comparison details
           setLastFeedback({
             isCorrect: result.isCorrect,
             feedback: result.feedback,
-            recognizedText: realTimeRecognition || result.feedback || '',
+            recognizedText: result.recognizedText,
+            expectedText: result.expectedText,
+            expectedJyutping: result.expectedJyutping,
           });
           setShowFeedback(true);
           setRealTimeRecognition(''); // Clear real-time recognition after showing feedback
@@ -295,21 +348,26 @@ const GamePage: React.FC = () => {
           }, 2000);
         } catch (err) {
           console.error('Failed to submit pronunciation:', err);
-          setIsRecording(false);
         } finally {
+          // Stop all media tracks
           stream.getTracks().forEach((track) => track.stop());
-          setIsRecording(false);
         }
       };
 
       mediaRecorder.start();
       
-      // Stop recording after 5 seconds
-      setTimeout(() => {
+      // Stop recording after 5 seconds (or user can stop manually)
+      const autoStopTimeout = setTimeout(() => {
         if (mediaRecorder.state === 'recording') {
           mediaRecorder.stop();
         }
       }, 5000);
+      
+      // Store timeout so we can clear it if user stops manually
+      (mediaRecorder as any)._autoStopTimeout = autoStopTimeout;
+      
+      // Reset stop flag when starting new recording
+      shouldStopRecognitionRef.current = false;
     } catch (err) {
       console.error('Failed to access microphone:', err);
       setIsRecording(false);
@@ -324,12 +382,14 @@ const GamePage: React.FC = () => {
           responseTime,
         });
 
-        // Show feedback immediately - use real-time recognition if available, otherwise use backend feedback
-        setLastFeedback({
-          isCorrect: result.isCorrect,
-          feedback: result.feedback,
-          recognizedText: realTimeRecognition || result.feedback || '',
-        });
+          // Show feedback immediately with comparison details
+          setLastFeedback({
+            isCorrect: result.isCorrect,
+            feedback: result.feedback,
+            recognizedText: result.recognizedText,
+            expectedText: result.expectedText,
+            expectedJyutping: result.expectedJyutping,
+          });
         setShowFeedback(true);
         setRealTimeRecognition(''); // Clear real-time recognition after showing feedback
 
@@ -363,7 +423,7 @@ const GamePage: React.FC = () => {
     }
   };
 
-  const handleSwipe = (direction: 'left' | 'right') => {
+  const handleSwipe = (_direction: 'left' | 'right') => {
     // Skip current word
     moveToNextWord();
   };
