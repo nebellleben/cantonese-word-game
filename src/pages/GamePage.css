@@ -213,6 +213,51 @@
   }
 }
 
+/* Processing Message */
+.processing-message {
+  width: 100%;
+  max-width: 500px;
+  margin: 1.5rem auto;
+  padding: 1.5rem;
+  text-align: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.processing-spinner {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.processing-text {
+  color: white;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
 /* Playback Container */
 .playback-container {
   width: 100%;

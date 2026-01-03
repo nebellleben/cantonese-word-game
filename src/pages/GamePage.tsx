@@ -30,6 +30,7 @@ const GamePage: React.FC = () => {
     expectedJyutping?: string;
   } | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [realTimeRecognition, setRealTimeRecognition] = useState<string>('');
   const [recordedAudioBlob, setRecordedAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -97,39 +98,64 @@ const GamePage: React.FC = () => {
 
   // Audio level monitoring - use time domain data for accurate volume
   useEffect(() => {
-    if (!isRecording || !audioContextRef.current || !analyserRef.current) {
+    if (!isRecording) {
       setAudioLevel(0);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
       return;
     }
 
-    const updateAudioLevel = () => {
-      if (!analyserRef.current) return;
-
-      // Use time domain data for accurate volume/amplitude measurement
-      const bufferLength = analyserRef.current.fftSize;
-      const dataArray = new Uint8Array(bufferLength);
-      analyserRef.current.getByteTimeDomainData(dataArray);
-      
-      // Calculate RMS (Root Mean Square) for accurate volume
-      let sum = 0;
-      for (let i = 0; i < bufferLength; i++) {
-        const normalized = (dataArray[i] - 128) / 128;
-        sum += normalized * normalized;
+    // Wait a bit for audio context and analyser to be set up
+    // Check periodically if they're ready
+    const checkAndStartMonitoring = () => {
+      if (!audioContextRef.current || !analyserRef.current) {
+        // If not ready yet, check again in a short time
+        setTimeout(checkAndStartMonitoring, 50);
+        return;
       }
-      const rms = Math.sqrt(sum / bufferLength);
-      
-      // Normalize to 0-1 and apply smoothing
-      const normalizedLevel = Math.min(rms * 2, 1); // Multiply by 2 for better sensitivity
-      setAudioLevel(normalizedLevel);
 
-      animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
+      // Now start monitoring
+      const updateAudioLevel = () => {
+        if (!analyserRef.current || !isRecording) {
+          if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+          }
+          return;
+        }
+
+        // Use time domain data for accurate volume/amplitude measurement
+        const bufferLength = analyserRef.current.fftSize;
+        const dataArray = new Uint8Array(bufferLength);
+        analyserRef.current.getByteTimeDomainData(dataArray);
+        
+        // Calculate RMS (Root Mean Square) for accurate volume
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          const normalized = (dataArray[i] - 128) / 128;
+          sum += normalized * normalized;
+        }
+        const rms = Math.sqrt(sum / bufferLength);
+        
+        // Normalize to 0-1 and apply smoothing
+        const normalizedLevel = Math.min(rms * 2, 1); // Multiply by 2 for better sensitivity
+        setAudioLevel(normalizedLevel);
+
+        animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
+      };
+
+      updateAudioLevel();
     };
 
-    updateAudioLevel();
+    // Start checking
+    checkAndStartMonitoring();
 
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
     };
   }, [isRecording]);
@@ -139,6 +165,7 @@ const GamePage: React.FC = () => {
     if (currentWordIndex >= 0) {
       setLastFeedback(null);
       setShowFeedback(false);
+      setIsProcessing(false);
       setRealTimeRecognition('');
       setIsPlaying(false);
       setError(''); // Clear any errors
@@ -340,13 +367,25 @@ const GamePage: React.FC = () => {
 
       // Set up audio analysis for volume bar
       const audioContext = new AudioContext();
+      
+      // Resume audio context if suspended (required in some browsers)
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+      
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.8; // Smooth the volume readings
       const source = audioContext.createMediaStreamSource(stream);
       source.connect(analyser);
       
       audioContextRef.current = audioContext;
       analyserRef.current = analyser;
+      
+      console.log('Audio context set up:', { 
+        state: audioContext.state, 
+        analyserReady: !!analyser 
+      });
 
       // Create a fresh audioChunks array for this recording session
       const audioChunks: Blob[] = [];
@@ -377,6 +416,9 @@ const GamePage: React.FC = () => {
         // Set recording to false immediately to prevent recognition from restarting
         setIsRecording(false);
         
+        // Show processing message
+        setIsProcessing(true);
+        
         // Clean up audio analysis
         if (audioContextRef.current) {
           audioContextRef.current.close();
@@ -390,6 +432,7 @@ const GamePage: React.FC = () => {
           console.error('No audio data recorded');
           // Stop all media tracks
           streamRef.getTracks().forEach((track) => track.stop());
+          setIsProcessing(false); // Clear processing state on error
           setError(t('recordingFailed') || 'Recording failed. Please try again.');
           return;
         }
@@ -402,6 +445,7 @@ const GamePage: React.FC = () => {
           console.error('Audio blob is empty');
           // Stop all media tracks
           streamRef.getTracks().forEach((track) => track.stop());
+          setIsProcessing(false); // Clear processing state on error
           setError(t('recordingFailed') || 'Recording failed. Please try again.');
           return;
         }
@@ -445,6 +489,7 @@ const GamePage: React.FC = () => {
             expectedJyutping: result.expectedJyutping,
           });
           setShowFeedback(true);
+          setIsProcessing(false); // Hide processing message when feedback is shown
           setRealTimeRecognition(''); // Clear real-time recognition after showing feedback
 
           // Update session
@@ -460,6 +505,7 @@ const GamePage: React.FC = () => {
           // Don't auto-advance - user will click Next button
         } catch (err) {
           console.error('Failed to submit pronunciation:', err);
+          setIsProcessing(false); // Hide processing message on error
           setError(t('submissionFailed') || 'Failed to submit pronunciation. Please try again.');
         } finally {
           // Stop all media tracks
@@ -724,6 +770,14 @@ const GamePage: React.FC = () => {
           </div>
         )}
 
+        {/* Processing Message */}
+        {isProcessing && (
+          <div className="processing-message">
+            <div className="processing-spinner">⏳</div>
+            <div className="processing-text">{t('processingPronunciation')}</div>
+          </div>
+        )}
+
         {/* Playback Button - shown after recording when feedback is displayed */}
         {showFeedback && recordedAudioBlob && audioUrl && (
           <div className="playback-container">
@@ -737,7 +791,7 @@ const GamePage: React.FC = () => {
         )}
 
         <div className="game-actions">
-          {!showFeedback ? (
+          {!showFeedback && !isProcessing ? (
             <>
               {isRecording ? (
                 <>
@@ -760,14 +814,14 @@ const GamePage: React.FC = () => {
                   <button
                     onClick={handleRecord}
                     className="btn btn-primary btn-record"
-                    disabled={showFeedback}
+                    disabled={showFeedback || isProcessing}
                   >
                     🎤 {t('recordPronunciation')}
                   </button>
                   <button
                     onClick={handleSwipe.bind(null, 'left')}
                     className="btn btn-secondary"
-                    disabled={isRecording || showFeedback}
+                    disabled={isRecording || showFeedback || isProcessing}
                   >
                     ⏭️ {t('skipWord')}
                   </button>
