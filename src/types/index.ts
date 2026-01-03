@@ -110,5 +110,8 @@ export interface SubmitPronunciationRequest {
 export interface PronunciationResponse {
   isCorrect: boolean;
   feedback?: string;
+  recognizedText?: string;
+  expectedText?: string;
+  expectedJyutping?: string;
 }
 

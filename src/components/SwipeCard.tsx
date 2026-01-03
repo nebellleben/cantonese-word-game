@@ -7,6 +7,14 @@ interface SwipeCardProps {
   onSwipe: (direction: 'left' | 'right') => void;
   onComplete: () => void;
   disabled?: boolean;
+  showFeedback?: boolean;
+  feedback?: { 
+    isCorrect: boolean; 
+    feedback?: string;
+    recognizedText?: string;
+    expectedText?: string;
+    expectedJyutping?: string;
+  } | null;
 }
 
 const SwipeCard: React.FC<SwipeCardProps> = ({
@@ -14,6 +22,8 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
   onSwipe,
   onComplete,
   disabled = false,
+  showFeedback = false,
+  feedback = null,
 }) => {
   const { t } = useLanguage();
   const [startX, setStartX] = useState(0);
@@ -125,8 +135,53 @@ const SwipeCard: React.FC<SwipeCardProps> = ({
     >
       <div className="card-content">
         <div className="word-display">{word}</div>
+        
+        {/* Feedback Display */}
+        {showFeedback && feedback && (
+          <div className={`feedback-container ${feedback.isCorrect ? 'correct' : 'incorrect'}`}>
+            <div className="feedback-icon">
+              {feedback.isCorrect ? '✓' : '✗'}
+            </div>
+            <div className="feedback-text">
+              <div className="feedback-status">
+                {feedback.isCorrect ? t('pronunciationCorrect') : t('pronunciationIncorrect')}
+              </div>
+              
+              {/* Comparison Details */}
+              <div className="feedback-comparison">
+                {feedback.expectedText && (
+                  <div className="comparison-row">
+                    <span className="comparison-label">Expected word:</span>
+                    <span className="comparison-value">{feedback.expectedText}</span>
+                  </div>
+                )}
+                {feedback.expectedJyutping && (
+                  <div className="comparison-row">
+                    <span className="comparison-label">Expected pronunciation:</span>
+                    <span className="comparison-value">{feedback.expectedJyutping}</span>
+                  </div>
+                )}
+                {feedback.recognizedText && (
+                  <div className="comparison-row">
+                    <span className="comparison-label">Recognized pronunciation:</span>
+                    <span className={`comparison-value ${feedback.isCorrect ? 'match' : 'mismatch'}`}>
+                      {feedback.recognizedText}
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              {feedback.feedback && (
+                <div className="feedback-message">
+                  {feedback.feedback}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="card-hint">
-          {!disabled && (
+          {!disabled && !showFeedback && (
             <>
               <p>{t('swipeLeftToSkip')}</p>
               <p>{t('swipeRightToSkip')}</p>

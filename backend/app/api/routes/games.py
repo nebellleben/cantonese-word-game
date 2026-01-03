@@ -36,7 +36,7 @@ async def submit_pronunciation(
         if audio:
             audio_data = await audio.read()
         
-        is_correct, feedback = game_service.submit_pronunciation(
+        is_correct, feedback, recognized_text, expected_text, expected_jyutping = game_service.submit_pronunciation(
             sessionId,
             wordId,
             responseTime,
@@ -45,7 +45,10 @@ async def submit_pronunciation(
         
         return PronunciationResponse(
             isCorrect=is_correct,
-            feedback=feedback
+            feedback=feedback,
+            recognizedText=recognized_text,
+            expectedText=expected_text,
+            expectedJyutping=expected_jyutping
         )
     except ValueError as e:
         raise HTTPException(

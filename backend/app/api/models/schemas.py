@@ -75,6 +75,9 @@ class StartGameRequest(BaseModel):
 class PronunciationResponse(BaseModel):
     isCorrect: bool
     feedback: Optional[str] = None
+    recognizedText: Optional[str] = None
+    expectedText: Optional[str] = None
+    expectedJyutping: Optional[str] = None
     
     model_config = ConfigDict(populate_by_name=True)
 

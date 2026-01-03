@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 import random
 from datetime import datetime, date
@@ -56,7 +56,7 @@ class GameService:
         word_id: UUID,
         response_time: int,
         audio_data: bytes = None
-    ) -> tuple[bool, str]:
+    ) -> tuple[bool, str, Optional[str], str, str]:
         """Submit a pronunciation attempt."""
         # Verify session exists
         session = db.get_game_session(session_id)
@@ -73,7 +73,7 @@ class GameService:
             raise ValueError("Word not found")
         
         # Evaluate pronunciation
-        is_correct, feedback = speech_recognition_engine.evaluate_pronunciation(
+        is_correct, feedback, recognized_jyutping = speech_recognition_engine.evaluate_pronunciation(
             audio_data or b"",
             word["text"],
             word["jyutping"]
@@ -82,7 +82,8 @@ class GameService:
         # Record attempt
         db.create_game_attempt(session_id, word_id, is_correct, response_time)
         
-        return is_correct, feedback or ""
+        # Return result with recognized text for debugging/comparison
+        return is_correct, feedback or "", recognized_jyutping, word["text"], word["jyutping"]
     
     def end_game(self, session_id: UUID) -> GameSession:
         """End a game session and calculate score."""

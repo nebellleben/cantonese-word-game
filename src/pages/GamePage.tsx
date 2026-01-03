@@ -21,9 +21,21 @@ const GamePage: React.FC = () => {
   const [finalScore, setFinalScore] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [lastFeedback, setLastFeedback] = useState<{ 
+    isCorrect: boolean; 
+    feedback?: string;
+    recognizedText?: string;
+    expectedText?: string;
+    expectedJyutping?: string;
+  } | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   const startTimeRef = useRef<number>(Date.now());
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!deckId) {
@@ -47,16 +59,86 @@ const GamePage: React.FC = () => {
     }
   };
 
+  // Audio level monitoring
+  useEffect(() => {
+    if (!isRecording || !audioContextRef.current || !analyserRef.current) {
+      return;
+    }
+
+    const updateAudioLevel = () => {
+      if (!analyserRef.current) return;
+
+      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+      analyserRef.current.getByteFrequencyData(dataArray);
+      
+      // Calculate average volume
+      const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+      const normalizedLevel = Math.min(average / 128, 1); // Normalize to 0-1
+      setAudioLevel(normalizedLevel);
+
+      animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
+    };
+
+    updateAudioLevel();
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [isRecording]);
+
+  // Clear feedback when moving to next word
+  useEffect(() => {
+    if (currentWordIndex >= 0) {
+      setLastFeedback(null);
+      setShowFeedback(false);
+    }
+  }, [currentWordIndex]);
+
+  // Cleanup audio context on unmount
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+    };
+  }, []);
+
   const handleRecord = async () => {
     if (!session) return;
 
+    // If already recording, stop it
+    if (isRecording && mediaRecorderRef.current) {
+      if (mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+      return;
+    }
+
     try {
       setIsRecording(true);
+      setLastFeedback(null);
+      setShowFeedback(false);
+      setAudioLevel(0);
       
       // Request microphone access
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
+
+      // Set up audio analysis for volume bar
+      const audioContext = new AudioContext();
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+      
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
 
       const audioChunks: Blob[] = [];
       mediaRecorder.ondataavailable = (event) => {
@@ -64,6 +146,14 @@ const GamePage: React.FC = () => {
       };
 
       mediaRecorder.onstop = async () => {
+        // Clean up audio analysis
+        if (audioContextRef.current) {
+          audioContextRef.current.close();
+          audioContextRef.current = null;
+        }
+        analyserRef.current = null;
+        setAudioLevel(0);
+
         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
         const responseTime = Date.now() - startTimeRef.current;
 
@@ -75,6 +165,16 @@ const GamePage: React.FC = () => {
             responseTime,
           });
 
+          // Show feedback immediately with comparison details
+          setLastFeedback({
+            isCorrect: result.isCorrect,
+            feedback: result.feedback,
+            recognizedText: result.recognizedText,
+            expectedText: result.expectedText,
+            expectedJyutping: result.expectedJyutping,
+          });
+          setShowFeedback(true);
+
           // Update session
           const updatedWords = [...session.words];
           updatedWords[currentWordIndex] = {
@@ -85,10 +185,13 @@ const GamePage: React.FC = () => {
 
           setSession({ ...session, words: updatedWords });
 
-          // Move to next word
-          moveToNextWord();
+          // Move to next word after showing feedback for 2 seconds
+          setTimeout(() => {
+            moveToNextWord();
+          }, 2000);
         } catch (err) {
           console.error('Failed to submit pronunciation:', err);
+          setIsRecording(false);
         } finally {
           stream.getTracks().forEach((track) => track.stop());
           setIsRecording(false);
@@ -97,7 +200,7 @@ const GamePage: React.FC = () => {
 
       mediaRecorder.start();
       
-      // Stop recording after 5 seconds or when user clicks again
+      // Stop recording after 5 seconds
       setTimeout(() => {
         if (mediaRecorder.state === 'recording') {
           mediaRecorder.stop();
@@ -105,24 +208,44 @@ const GamePage: React.FC = () => {
       }, 5000);
     } catch (err) {
       console.error('Failed to access microphone:', err);
+      setIsRecording(false);
+      setAudioLevel(0);
+      
       // Fallback: submit without audio (for testing)
       const responseTime = Date.now() - startTimeRef.current;
-      const result = await apiClient.submitPronunciation({
-        sessionId: session.id,
-        wordId: session.words[currentWordIndex].wordId,
-        responseTime,
-      });
+      try {
+        const result = await apiClient.submitPronunciation({
+          sessionId: session.id,
+          wordId: session.words[currentWordIndex].wordId,
+          responseTime,
+        });
 
-      const updatedWords = [...session.words];
-      updatedWords[currentWordIndex] = {
-        ...updatedWords[currentWordIndex],
-        isCorrect: result.isCorrect,
-        responseTime,
-      };
+        // Show feedback immediately with comparison details
+        setLastFeedback({
+          isCorrect: result.isCorrect,
+          feedback: result.feedback,
+          recognizedText: result.recognizedText,
+          expectedText: result.expectedText,
+          expectedJyutping: result.expectedJyutping,
+        });
+        setShowFeedback(true);
 
-      setSession({ ...session, words: updatedWords });
-      setIsRecording(false);
-      moveToNextWord();
+        const updatedWords = [...session.words];
+        updatedWords[currentWordIndex] = {
+          ...updatedWords[currentWordIndex],
+          isCorrect: result.isCorrect,
+          responseTime,
+        };
+
+        setSession({ ...session, words: updatedWords });
+
+        // Move to next word after showing feedback for 2 seconds
+        setTimeout(() => {
+          moveToNextWord();
+        }, 2000);
+      } catch (submitErr) {
+        console.error('Failed to submit pronunciation:', submitErr);
+      }
     }
   };
 
@@ -235,20 +358,35 @@ const GamePage: React.FC = () => {
           onSwipe={handleSwipe}
           onComplete={handleRecord}
           disabled={isRecording}
+          showFeedback={showFeedback}
+          feedback={lastFeedback}
         />
+
+        {/* Volume Bar */}
+        {isRecording && (
+          <div className="volume-bar-container">
+            <div className="volume-bar-label">{t('speechDetected')}</div>
+            <div className="volume-bar">
+              <div 
+                className="volume-bar-fill" 
+                style={{ width: `${audioLevel * 100}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
 
         <div className="game-actions">
           <button
             onClick={handleRecord}
             className={`btn btn-primary btn-record ${isRecording ? 'recording' : ''}`}
-            disabled={isRecording}
+            disabled={showFeedback}
           >
             {isRecording ? `🎤 ${t('recording')}` : `🎤 ${t('recordPronunciation')}`}
           </button>
           <button
             onClick={handleSwipe.bind(null, 'left')}
             className="btn btn-secondary"
-            disabled={isRecording}
+            disabled={isRecording || showFeedback}
           >
             ⏭️ {t('skipWord')}
           </button>

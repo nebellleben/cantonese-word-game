@@ -67,6 +67,10 @@ const translations: Record<Language, Record<string, string>> = {
     'swipeLeftToSkip': '← Swipe left to skip',
     'swipeRightToSkip': '→ Swipe right to skip',
     'pressSpaceToRecord': 'Press Space/Enter to record',
+    'speechDetected': 'Speech detected',
+    'pronunciationCorrect': 'Correct!',
+    'pronunciationIncorrect': 'Incorrect',
+    'recognizedAs': 'Recognized as',
     
     // Statistics Page
     'statistics': 'Statistics',
@@ -180,6 +184,10 @@ const translations: Record<Language, Record<string, string>> = {
     'swipeLeftToSkip': '← 向左滑動跳過',
     'swipeRightToSkip': '→ 向右滑動跳過',
     'pressSpaceToRecord': '按空格鍵/Enter鍵錄音',
+    'speechDetected': '檢測到語音',
+    'pronunciationCorrect': '正確！',
+    'pronunciationIncorrect': '錯誤',
+    'recognizedAs': '識別為',
     
     // Statistics Page
     'statistics': '統計',
