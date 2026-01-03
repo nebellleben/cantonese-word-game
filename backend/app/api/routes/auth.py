@@ -1,13 +1,19 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from app.api.models.schemas import LoginRequest, RegisterRequest, AuthResponse, ErrorResponse
-from app.services.auth_service import auth_service
+from app.services.auth_service import AuthService
+from app.core.dependencies import get_db_service
+from app.db.database_service import DatabaseService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post("/login", response_model=AuthResponse, status_code=status.HTTP_200_OK)
-async def login(request: LoginRequest):
+async def login(
+    request: LoginRequest,
+    db_service: DatabaseService = Depends(get_db_service)
+):
     """Login user and return JWT token."""
+    auth_service = AuthService(db_service)
     user = auth_service.authenticate_user(request.username, request.password)
     
     if not user:
@@ -20,8 +26,12 @@ async def login(request: LoginRequest):
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-async def register(request: RegisterRequest):
+async def register(
+    request: RegisterRequest,
+    db_service: DatabaseService = Depends(get_db_service)
+):
     """Register a new user."""
+    auth_service = AuthService(db_service)
     try:
         user = auth_service.create_user(
             request.username,

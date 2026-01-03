@@ -2,12 +2,15 @@ from typing import Optional, List
 from uuid import UUID
 from collections import defaultdict
 from datetime import date
-from app.db.mock_db import db
+from app.db.database_service import DatabaseService
 from app.api.models.schemas import GameStatistics, ScoreByDate, WrongWord, Student
 
 
 class StatisticsService:
     """Service for statistics operations."""
+    
+    def __init__(self, db_service: DatabaseService):
+        self.db = db_service
     
     def get_statistics(
         self,
@@ -21,7 +24,7 @@ class StatisticsService:
         
         # Get all completed sessions for the user
         all_sessions = [
-            session for session in db.game_sessions.values()
+            session for session in self.db.game_sessions.values()
             if session["user_id"] == stats_user_id
             and session["ended_at"] is not None
             and (deck_id is None or session["deck_id"] == deck_id)
@@ -39,7 +42,7 @@ class StatisticsService:
             best_score = 0
         
         # Get streak data
-        streak_data = db.get_user_streak(stats_user_id)
+        streak_data = self.db.get_user_streak(stats_user_id)
         current_streak = streak_data["current_streak"]
         longest_streak = streak_data["longest_streak"]
         
@@ -56,7 +59,7 @@ class StatisticsService:
         ]
         
         # Get top wrong words
-        attempts = db.get_attempts_by_user(stats_user_id, deck_id)
+        attempts = self.db.get_attempts_by_user(stats_user_id, deck_id)
         top_wrong_words = self._calculate_wrong_words(attempts)
         
         return GameStatistics(
@@ -73,11 +76,11 @@ class StatisticsService:
         """Get list of students."""
         if user_role == "admin":
             # Admin sees all students
-            students = db.get_all_students()
+            students = self.db.get_all_students()
         elif user_role == "teacher":
             # Teacher sees only associated students
-            student_ids = db.get_students_by_teacher(user_id)
-            students = [db.get_user_by_id(sid) for sid in student_ids if db.get_user_by_id(sid)]
+            student_ids = self.db.get_students_by_teacher(user_id)
+            students = [self.db.get_user_by_id(sid) for sid in student_ids if self.db.get_user_by_id(sid)]
         else:
             # Students cannot access this
             return []
@@ -85,11 +88,11 @@ class StatisticsService:
         # Calculate stats for each student
         result = []
         for student in students:
-            streak_data = db.get_user_streak(student["id"])
+            streak_data = self.db.get_user_streak(student["id"])
             
             # Calculate total score
             student_sessions = [
-                s for s in db.game_sessions.values()
+                s for s in self.db.game_sessions.values()
                 if s["user_id"] == student["id"] and s["score"] is not None
             ]
             total_score = sum(s["score"] for s in student_sessions)
@@ -106,15 +109,18 @@ class StatisticsService:
     def get_word_error_ratios(self, user_id: UUID, user_role: str) -> List[WrongWord]:
         """Get word error ratios."""
         if user_role == "admin":
-            # Admin sees all errors
-            attempts = list(db.game_attempts.values())
+            # Admin sees all errors - get all attempts
+            # We need to get attempts from all users
+            all_students = self.db.get_all_students()
+            student_ids = [UUID(s["id"]) for s in all_students]
+            attempts = self.db.get_attempts_by_students(student_ids) if student_ids else []
         elif user_role == "teacher":
             # Teacher sees errors from their students
-            student_ids = db.get_students_by_teacher(user_id)
-            attempts = db.get_attempts_by_students(student_ids)
+            student_ids = self.db.get_students_by_teacher(user_id)
+            attempts = self.db.get_attempts_by_students(student_ids) if student_ids else []
         else:
             # Students see their own errors
-            attempts = db.get_attempts_by_user(user_id)
+            attempts = self.db.get_attempts_by_user(user_id)
         
         return self._calculate_wrong_words(attempts)
     
@@ -131,7 +137,7 @@ class StatisticsService:
         
         wrong_words = []
         for word_id, stats in word_stats.items():
-            word = db.get_word(word_id)
+            word = self.db.get_word(word_id)
             if not word:
                 continue
             
@@ -150,7 +156,4 @@ class StatisticsService:
         # Sort by error ratio (descending)
         wrong_words.sort(key=lambda x: x.errorRatio, reverse=True)
         return wrong_words
-
-
-statistics_service = StatisticsService()
 

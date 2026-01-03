@@ -3,13 +3,20 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from uuid import UUID
 from app.core.security import decode_access_token
-from app.db.mock_db import db
+from app.db.base import get_db as get_db_session
+from app.db.database_service import DatabaseService
 
 security = HTTPBearer()
 
 
+def get_db_service(db: Depends(get_db_session)) -> DatabaseService:
+    """Get database service instance."""
+    return DatabaseService(db)
+
+
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db_service: DatabaseService = Depends(get_db_service)
 ) -> dict:
     """Get current authenticated user from JWT token."""
     token = credentials.credentials
@@ -23,7 +30,7 @@ async def get_current_user(
         )
     
     user_id = UUID(payload.get("sub"))
-    user = db.get_user_by_id(user_id)
+    user = db_service.get_user_by_id(user_id)
     
     if user is None:
         raise HTTPException(

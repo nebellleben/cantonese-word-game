@@ -4,8 +4,8 @@ from app.api.models.schemas import (
     Deck, Word, CreateDeckRequest, CreateWordRequest,
     AssociationRequest, ResetPasswordRequest
 )
-from app.core.dependencies import get_current_admin
-from app.db.mock_db import db
+from app.core.dependencies import get_current_admin, get_db_service
+from app.db.database_service import DatabaseService
 from app.engines.jyutping_engine import jyutping_engine
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -14,10 +14,11 @@ router = APIRouter(prefix="/admin", tags=["Admin"])
 @router.post("/decks", response_model=Deck, status_code=status.HTTP_201_CREATED)
 async def create_deck(
     request: CreateDeckRequest,
-    current_user: dict = Depends(get_current_admin)
+    current_user: dict = Depends(get_current_admin),
+    db_service: DatabaseService = Depends(get_db_service)
 ):
     """Create a new deck."""
-    deck = db.create_deck(request.name, request.description)
+    deck = db_service.create_deck(request.name, request.description)
     return Deck(
         id=deck["id"],
         name=deck["name"],
@@ -29,10 +30,11 @@ async def create_deck(
 @router.delete("/decks/{deck_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_deck(
     deck_id: UUID,
-    current_user: dict = Depends(get_current_admin)
+    current_user: dict = Depends(get_current_admin),
+    db_service: DatabaseService = Depends(get_db_service)
 ):
     """Delete a deck."""
-    if not db.delete_deck(deck_id):
+    if not db_service.delete_deck(deck_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Deck not found"
@@ -43,10 +45,11 @@ async def delete_deck(
 async def add_word(
     deck_id: UUID,
     request: CreateWordRequest,
-    current_user: dict = Depends(get_current_admin)
+    current_user: dict = Depends(get_current_admin),
+    db_service: DatabaseService = Depends(get_db_service)
 ):
     """Add a word to a deck."""
-    deck = db.get_deck(deck_id)
+    deck = db_service.get_deck(deck_id)
     if not deck:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -61,7 +64,7 @@ async def add_word(
             detail="Could not generate jyutping for word"
         )
     
-    word = db.create_word(request.text, jyutping, deck_id)
+    word = db_service.create_word(request.text, jyutping, deck_id)
     return Word(
         id=word["id"],
         text=word["text"],
@@ -74,10 +77,11 @@ async def add_word(
 @router.delete("/words/{word_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_word(
     word_id: UUID,
-    current_user: dict = Depends(get_current_admin)
+    current_user: dict = Depends(get_current_admin),
+    db_service: DatabaseService = Depends(get_db_service)
 ):
     """Delete a word."""
-    if not db.delete_word(word_id):
+    if not db_service.delete_word(word_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Word not found"
@@ -87,11 +91,12 @@ async def delete_word(
 @router.post("/associations", status_code=status.HTTP_204_NO_CONTENT)
 async def create_association(
     request: AssociationRequest,
-    current_user: dict = Depends(get_current_admin)
+    current_user: dict = Depends(get_current_admin),
+    db_service: DatabaseService = Depends(get_db_service)
 ):
     """Associate a student with a teacher."""
-    student = db.get_user_by_id(request.studentId)
-    teacher = db.get_user_by_id(request.teacherId)
+    student = db_service.get_user_by_id(request.studentId)
+    teacher = db_service.get_user_by_id(request.teacherId)
     
     if not student:
         raise HTTPException(
@@ -117,17 +122,18 @@ async def create_association(
             detail="User is not a teacher"
         )
     
-    db.create_association(request.studentId, request.teacherId)
+    db_service.create_association(request.studentId, request.teacherId)
 
 
 @router.post("/users/{user_id}/reset-password", status_code=status.HTTP_204_NO_CONTENT)
 async def reset_password(
     user_id: UUID,
     request: ResetPasswordRequest,
-    current_user: dict = Depends(get_current_admin)
+    current_user: dict = Depends(get_current_admin),
+    db_service: DatabaseService = Depends(get_db_service)
 ):
     """Reset password for a user."""
-    if not db.reset_user_password(user_id, request.password):
+    if not db_service.reset_user_password(user_id, request.password):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
