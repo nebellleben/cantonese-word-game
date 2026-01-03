@@ -213,6 +213,32 @@
   }
 }
 
+/* Playback Container */
+.playback-container {
+  width: 100%;
+  max-width: 500px;
+  margin: 1rem auto;
+  display: flex;
+  justify-content: center;
+}
+
+.btn-playback {
+  min-width: 180px;
+  font-size: 1rem;
+  padding: 0.75rem 1.5rem;
+}
+
+.btn-playback.playing {
+  background: #ff6b9d;
+  color: white;
+}
+
+.btn-next {
+  min-width: 200px;
+  font-size: 1.1rem;
+  padding: 1rem 2rem;
+}
+
 @media (max-width: 768px) {
   .game-page {
     padding: 1rem;

@@ -72,6 +72,9 @@ const translations: Record<Language, Record<string, string>> = {
     'pronunciationIncorrect': 'Incorrect',
     'recognizedAs': 'Recognized as',
     'recognizing': 'Recognizing',
+    'playRecording': 'Play Recording',
+    'nextWord': 'Next Word',
+    'stop': 'Stop',
     
     // Statistics Page
     'statistics': 'Statistics',
@@ -190,6 +193,9 @@ const translations: Record<Language, Record<string, string>> = {
     'pronunciationIncorrect': '錯誤',
     'recognizedAs': '識別為',
     'recognizing': '識別中',
+    'playRecording': '播放錄音',
+    'nextWord': '下一個詞彙',
+    'stop': '停止',
     
     // Statistics Page
     'statistics': '統計',

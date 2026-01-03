@@ -31,6 +31,9 @@ const GamePage: React.FC = () => {
   } | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [realTimeRecognition, setRealTimeRecognition] = useState<string>('');
+  const [recordedAudioBlob, setRecordedAudioBlob] = useState<Blob | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const startTimeRef = useRef<number>(Date.now());
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -39,6 +42,8 @@ const GamePage: React.FC = () => {
   const animationFrameRef = useRef<number | null>(null);
   const recognitionRef = useRef<any>(null);
   const shouldStopRecognitionRef = useRef<boolean>(false);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
 
   const startGame = useCallback(async () => {
     if (!deckId) {
@@ -112,7 +117,22 @@ const GamePage: React.FC = () => {
       setLastFeedback(null);
       setShowFeedback(false);
       setRealTimeRecognition('');
+      setIsPlaying(false);
       shouldStopRecognitionRef.current = false; // Reset stop flag for next word
+      
+      // Stop and cleanup audio player
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current = null;
+      }
+      
+      // Clean up old audio URL before clearing state
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+        audioUrlRef.current = null;
+      }
+      setAudioUrl(null);
+      setRecordedAudioBlob(null);
     }
   }, [currentWordIndex]);
 
@@ -219,7 +239,7 @@ const GamePage: React.FC = () => {
     };
   }, [isRecording, showFeedback]);
 
-  // Cleanup audio context on unmount
+  // Cleanup audio context and audio URL on unmount
   useEffect(() => {
     return () => {
       if (animationFrameRef.current) {
@@ -227,6 +247,14 @@ const GamePage: React.FC = () => {
       }
       if (audioContextRef.current) {
         audioContextRef.current.close();
+      }
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current = null;
+      }
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+        audioUrlRef.current = null;
       }
     };
   }, []);
@@ -313,6 +341,16 @@ const GamePage: React.FC = () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
         const responseTime = Date.now() - startTimeRef.current;
 
+        // Store audio blob for playback
+        setRecordedAudioBlob(audioBlob);
+        // Clean up previous URL if exists
+        if (audioUrlRef.current) {
+          URL.revokeObjectURL(audioUrlRef.current);
+        }
+        const url = URL.createObjectURL(audioBlob);
+        audioUrlRef.current = url;
+        setAudioUrl(url);
+
         try {
           const result = await apiClient.submitPronunciation({
             sessionId: session.id,
@@ -342,10 +380,7 @@ const GamePage: React.FC = () => {
 
           setSession({ ...session, words: updatedWords });
 
-          // Move to next word after showing feedback for 2 seconds
-          setTimeout(() => {
-            moveToNextWord();
-          }, 2000);
+          // Don't auto-advance - user will click Next button
         } catch (err) {
           console.error('Failed to submit pronunciation:', err);
         } finally {
@@ -402,10 +437,7 @@ const GamePage: React.FC = () => {
 
         setSession({ ...session, words: updatedWords });
 
-        // Move to next word after showing feedback for 2 seconds
-        setTimeout(() => {
-          moveToNextWord();
-        }, 2000);
+        // Don't auto-advance - user will click Next button
       } catch (submitErr) {
         console.error('Failed to submit pronunciation:', submitErr);
       }
@@ -426,6 +458,45 @@ const GamePage: React.FC = () => {
   const handleSwipe = (_direction: 'left' | 'right') => {
     // Skip current word
     moveToNextWord();
+  };
+
+  const handlePlayRecording = () => {
+    if (!audioUrl) return;
+
+    // Clean up previous audio if exists
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
+      audioPlayerRef.current = null;
+    }
+
+    // Create new audio element
+    const audio = new Audio(audioUrl);
+    audioPlayerRef.current = audio;
+
+    audio.onplay = () => setIsPlaying(true);
+    audio.onended = () => {
+      setIsPlaying(false);
+      audioPlayerRef.current = null;
+    };
+    audio.onerror = () => {
+      setIsPlaying(false);
+      audioPlayerRef.current = null;
+    };
+
+    audio.play().catch((err) => {
+      console.error('Failed to play audio:', err);
+      setIsPlaying(false);
+      audioPlayerRef.current = null;
+    });
+  };
+
+  const handleStopPlayback = () => {
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
+      audioPlayerRef.current.currentTime = 0;
+      audioPlayerRef.current = null;
+      setIsPlaying(false);
+    }
   };
 
   const endGame = async () => {
@@ -539,21 +610,44 @@ const GamePage: React.FC = () => {
           </div>
         )}
 
+        {/* Playback Button - shown after recording when feedback is displayed */}
+        {showFeedback && recordedAudioBlob && audioUrl && (
+          <div className="playback-container">
+            <button
+              onClick={isPlaying ? handleStopPlayback : handlePlayRecording}
+              className={`btn btn-secondary btn-playback ${isPlaying ? 'playing' : ''}`}
+            >
+              {isPlaying ? '⏸️ ' + t('stop') : '▶️ ' + t('playRecording')}
+            </button>
+          </div>
+        )}
+
         <div className="game-actions">
-          <button
-            onClick={handleRecord}
-            className={`btn btn-primary btn-record ${isRecording ? 'recording' : ''}`}
-            disabled={showFeedback}
-          >
-            {isRecording ? `🎤 ${t('recording')}` : `🎤 ${t('recordPronunciation')}`}
-          </button>
-          <button
-            onClick={handleSwipe.bind(null, 'left')}
-            className="btn btn-secondary"
-            disabled={isRecording || showFeedback}
-          >
-            ⏭️ {t('skipWord')}
-          </button>
+          {!showFeedback ? (
+            <>
+              <button
+                onClick={handleRecord}
+                className={`btn btn-primary btn-record ${isRecording ? 'recording' : ''}`}
+                disabled={showFeedback}
+              >
+                {isRecording ? `🎤 ${t('recording')}` : `🎤 ${t('recordPronunciation')}`}
+              </button>
+              <button
+                onClick={handleSwipe.bind(null, 'left')}
+                className="btn btn-secondary"
+                disabled={isRecording || showFeedback}
+              >
+                ⏭️ {t('skipWord')}
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={moveToNextWord}
+              className="btn btn-primary btn-next"
+            >
+              ➡️ {t('nextWord')}
+            </button>
+          )}
         </div>
       </div>
     </div>
