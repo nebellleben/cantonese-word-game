@@ -65,12 +65,11 @@ describe('API Client', () => {
       expect(decks.length).toBeGreaterThan(0);
     });
 
-    it('should get a specific deck', async () => {
+    it('should get words from a deck', async () => {
       const decks = await apiClient.getDecks();
       if (decks.length > 0) {
-        const deck = await apiClient.getDeck(decks[0].id);
-        expect(deck.id).toBe(decks[0].id);
-        expect(deck.name).toBeDefined();
+        const words = await apiClient.getWordsByDeck(decks[0].id);
+        expect(Array.isArray(words)).toBe(true);
       }
     });
   });

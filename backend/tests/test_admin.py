@@ -67,6 +67,7 @@ def test_delete_word(client, admin_token):
     
     # Get a deck and add a word
     decks_response = client.get("/api/decks", headers=headers)
+    decks = decks_response.json()
     deck_id = decks[0]["id"]
     
     add_response = client.post(

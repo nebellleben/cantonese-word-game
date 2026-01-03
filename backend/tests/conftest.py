@@ -1,4 +1,5 @@
 import pytest
+import uuid
 from fastapi.testclient import TestClient
 from app.main import app
 from app.db.mock_db import MockDatabase, db
@@ -32,9 +33,11 @@ def admin_token(client):
 @pytest.fixture
 def student_user(client):
     """Create a test student user and return token."""
+    # Use unique username to avoid conflicts
+    unique_username = f"teststudent_{uuid.uuid4().hex[:8]}"
     response = client.post(
         "/api/auth/register",
-        json={"username": "teststudent", "password": "testpass", "role": "student"}
+        json={"username": unique_username, "password": "testpass", "role": "student"}
     )
     assert response.status_code == 201
     return response.json()["token"], response.json()["user"]
@@ -43,9 +46,11 @@ def student_user(client):
 @pytest.fixture
 def teacher_user(client):
     """Create a test teacher user and return token."""
+    # Use unique username to avoid conflicts
+    unique_username = f"testteacher_{uuid.uuid4().hex[:8]}"
     response = client.post(
         "/api/auth/register",
-        json={"username": "testteacher", "password": "testpass", "role": "teacher"}
+        json={"username": unique_username, "password": "testpass", "role": "teacher"}
     )
     assert response.status_code == 201
     return response.json()["token"], response.json()["user"]

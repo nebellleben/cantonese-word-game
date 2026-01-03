@@ -148,7 +148,7 @@ class StatisticsService:
             ))
         
         # Sort by error ratio (descending)
-        wrong_words.sort(key=lambda x: x.error_ratio, reverse=True)
+        wrong_words.sort(key=lambda x: x.errorRatio, reverse=True)
         return wrong_words
 
 
