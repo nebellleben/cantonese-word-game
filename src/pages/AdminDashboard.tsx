@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { apiClient } from '../services/api';
-import type { Deck, Word, Student, Teacher, GameStatistics } from '../types';
+import type { Deck, Word, Student, GameStatistics } from '../types';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import './AdminDashboard.css';
 
@@ -23,7 +23,6 @@ const AdminDashboard: React.FC = () => {
   
   // Association state
   const [students, setStudents] = useState<Student[]>([]);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
   
@@ -55,30 +54,44 @@ const AdminDashboard: React.FC = () => {
     }
   }, [selectedStudentForStats, activeTab]);
 
+  // Load collective statistics only when statistics tab is opened
+  useEffect(() => {
+    if (activeTab === 'statistics' && !allStudentsStats) {
+      loadAllStudentsStatistics();
+    }
+  }, [activeTab]);
+
+  const loadAllStudentsStatistics = async () => {
+    try {
+      const stats = await apiClient.getStatistics();
+      setAllStudentsStats(stats);
+    } catch (error) {
+      console.error('Failed to load all students statistics:', error);
+    }
+  };
+
   const loadInitialData = async () => {
     try {
-      const [deckList, studentList, teacherList, allStats] = await Promise.all([
+      // Only load essential data upfront - decks and students
+      // Statistics and teachers can be loaded on-demand
+      const [deckList, studentList] = await Promise.all([
         apiClient.getDecks(),
         apiClient.getStudents(),
-        apiClient.getStudents().then(students => 
-          students.map(s => ({ ...s, role: 'teacher' as const, studentIds: [] }))
-        ),
-        apiClient.getStatistics(),
       ]);
       setDecks(deckList);
       setStudents(studentList);
-      setTeachers(teacherList as Teacher[]);
-      setAllStudentsStats(allStats);
-      if (deckList.length > 0) {
-        setSelectedDeckId(deckList[0].id);
-      }
+      
+      // For teachers, we'll use students list filtered by role when needed
+      // Since there's no separate teachers endpoint, we'll handle this in the UI
       if (studentList.length > 0) {
         setSelectedStudentForStats(studentList[0].id);
         setSelectedStudentId(studentList[0].id);
         setSelectedUserForPassword(studentList[0].id);
+        // Set first student as default teacher selection (will be filtered in UI)
+        setSelectedTeacherId(studentList[0].id);
       }
-      if (teacherList.length > 0) {
-        setSelectedTeacherId((teacherList as Teacher[])[0].id);
+      if (deckList.length > 0) {
+        setSelectedDeckId(deckList[0].id);
       }
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -183,7 +196,7 @@ const AdminDashboard: React.FC = () => {
     }
 
     try {
-      await apiClient.associateStudentWithTeacher(selectedStudentId, selectedTeacherId);
+      await apiClient.associateStudentTeacher(selectedStudentId, selectedTeacherId);
       showMessage('success', 'Student associated with teacher successfully');
     } catch (error) {
       showMessage('error', 'Failed to associate student with teacher');
@@ -219,7 +232,8 @@ const AdminDashboard: React.FC = () => {
     return <div className="loading">{t('loading')}</div>;
   }
 
-  const allUsers = [...students, ...teachers];
+  // All users for password management (students and teachers)
+  const allUsers = students.filter(u => u.role === 'student' || u.role === 'teacher');
 
   return (
     <div className="admin-dashboard">
@@ -393,11 +407,15 @@ const AdminDashboard: React.FC = () => {
                 value={selectedTeacherId}
                 onChange={(e) => setSelectedTeacherId(e.target.value)}
               >
-                {teachers.map((teacher) => (
+                {/* Filter students to show only teachers - in a real app, there would be a separate teachers endpoint */}
+                {students.filter(s => s.role === 'teacher').map((teacher) => (
                   <option key={teacher.id} value={teacher.id}>
                     {teacher.username}
                   </option>
                 ))}
+                {students.filter(s => s.role === 'teacher').length === 0 && (
+                  <option value="">No teachers available</option>
+                )}
               </select>
             </div>
             <button onClick={handleAssociate} className="btn btn-primary">

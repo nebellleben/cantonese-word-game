@@ -65,3 +65,4 @@ def test_register_duplicate_username(client):
     )
     assert response.status_code == 400
 
+

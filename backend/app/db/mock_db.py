@@ -24,17 +24,14 @@ class MockDatabase:
     def _initialize_default_data(self):
         """Initialize with default admin user and sample data."""
         # Create default admin user
-        # Use a pre-computed hash to avoid bcrypt initialization issues
-        # This is a bcrypt hash for "cantonese" - $2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYq5q5q5q5q
-        # For now, we'll compute it lazily
+        # For mock database, use SHA256 hash for faster initialization
+        # In production with real database, bcrypt will be used
         admin_id = UUID("00000000-0000-0000-0000-000000000001")
-        try:
-            password_hash = get_password_hash("cantonese")
-        except Exception:
-            # Fallback: use a simple hash if bcrypt fails
-            # In production, this should never happen
-            import hashlib
-            password_hash = hashlib.sha256("cantonese".encode()).hexdigest()
+        
+        # Use SHA256 for mock database to avoid slow bcrypt initialization
+        # The verify_password function will handle both bcrypt and SHA256 hashes
+        import hashlib
+        password_hash = hashlib.sha256("cantonese".encode()).hexdigest()
         
         self.users[admin_id] = {
             "id": admin_id,

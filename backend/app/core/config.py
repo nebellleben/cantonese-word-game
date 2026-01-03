@@ -16,8 +16,10 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: List[str] = ["http://localhost:5173", "http://localhost:3000"]
     
-    # Database (for future use)
-    database_url: str = "sqlite:///./test.db"
+    # Database
+    database_url: str = "sqlite:///./cantonese_game.db"
+    # For PostgreSQL, use: postgresql://user:password@localhost/dbname
+    # For SQLite (default), use: sqlite:///./cantonese_game.db
     
     model_config = ConfigDict(env_file=".env", case_sensitive=True)
 

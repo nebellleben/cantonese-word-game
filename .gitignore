@@ -53,3 +53,5 @@ coverage/
 # Build outputs
 build/
 dist/
+*.timestamp-*.mjs
+vite.config.ts.timestamp-*

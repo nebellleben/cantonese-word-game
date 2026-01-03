@@ -49,3 +49,4 @@ def test_get_word_error_ratios(client, student_user):
     words = response.json()
     assert isinstance(words, list)
 
+

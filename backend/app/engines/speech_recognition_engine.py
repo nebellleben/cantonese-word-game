@@ -25,24 +25,40 @@ class SpeechRecognitionEngine:
         """Initialize the speech recognition engine."""
         self.model = None
         self.use_whisper = False
+        self._model_loading = False
+        self._model_loaded = False
         
-        if FASTER_WHISPER_AVAILABLE:
-            try:
-                # Load faster-whisper model (base model is good balance of speed/accuracy)
-                # For Cantonese, we use 'base' model which supports multilingual including Cantonese
-                # faster-whisper is compatible with Python 3.14 and faster than openai-whisper
-                print("Loading faster-whisper ASR model for Cantonese...")
-                self.model = WhisperModel("base", device="cpu", compute_type="int8")
-                self.use_whisper = True
-                print("faster-whisper model loaded successfully!")
-            except Exception as e:
-                print(f"Warning: Failed to load faster-whisper model: {e}")
-                print("Falling back to mock implementation")
-                self.use_whisper = False
-        else:
+        # Don't load model during initialization - load lazily on first use
+        # This prevents blocking server startup
+        if not FASTER_WHISPER_AVAILABLE:
             print("Warning: faster-whisper not installed. Using mock implementation.")
             print("Install with: uv add faster-whisper")
+    
+    def _ensure_model_loaded(self):
+        """Lazily load the model on first use."""
+        if self._model_loaded or self._model_loading:
+            return
+        
+        if not FASTER_WHISPER_AVAILABLE:
+            return
+        
+        self._model_loading = True
+        try:
+            # Load faster-whisper model (base model is good balance of speed/accuracy)
+            # For Cantonese, we use 'base' model which supports multilingual including Cantonese
+            # faster-whisper is compatible with Python 3.14 and faster than openai-whisper
+            print("Loading faster-whisper ASR model for Cantonese...")
+            self.model = WhisperModel("base", device="cpu", compute_type="int8")
+            self.use_whisper = True
+            self._model_loaded = True
+            print("faster-whisper model loaded successfully!")
+        except Exception as e:
+            print(f"Warning: Failed to load faster-whisper model: {e}")
+            print("Falling back to mock implementation")
             self.use_whisper = False
+            self._model_loaded = True  # Mark as loaded even if failed to prevent retries
+        finally:
+            self._model_loading = False
     
     def _transcribe_audio(self, audio_data: bytes) -> str:
         """
@@ -51,6 +67,10 @@ class SpeechRecognitionEngine:
         Returns:
             Recognized text in Chinese characters (Cantonese), then converted to jyutping
         """
+        # Load model lazily on first use
+        if FASTER_WHISPER_AVAILABLE and not self._model_loaded:
+            self._ensure_model_loaded()
+        
         if self.use_whisper and self.model:
             try:
                 # Save audio data to temporary file

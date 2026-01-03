@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -30,34 +30,41 @@ const GamePage: React.FC = () => {
     expectedJyutping?: string;
   } | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [realTimeRecognition, setRealTimeRecognition] = useState<string>('');
 
   const startTimeRef = useRef<number>(Date.now());
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const recognitionRef = useRef<any>(null);
 
-  useEffect(() => {
+  const startGame = useCallback(async () => {
     if (!deckId) {
       navigate('/student');
       return;
     }
 
-    startGame();
-  }, [deckId]);
-
-  const startGame = async () => {
     try {
       setLoading(true);
-      const gameSession = await apiClient.startGame({ deckId: deckId! });
+      setError('');
+      console.log('Starting game with deckId:', deckId);
+      const gameSession = await apiClient.startGame({ deckId: deckId });
+      console.log('Game session received:', gameSession);
       setSession(gameSession);
       startTimeRef.current = Date.now();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('loadingGame'));
+      console.error('Error starting game:', err);
+      const errorMessage = err instanceof Error ? err.message : t('loadingGame');
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [deckId, navigate, t]);
+
+  useEffect(() => {
+    startGame();
+  }, [startGame]);
 
   // Audio level monitoring - use time domain data for accurate volume
   useEffect(() => {

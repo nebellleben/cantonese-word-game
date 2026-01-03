@@ -34,8 +34,12 @@ const StudentDashboard: React.FC = () => {
   };
 
   const handleStartGame = () => {
+    console.log('StudentDashboard: Start game clicked, selectedDeck:', selectedDeck);
     if (selectedDeck) {
+      console.log('StudentDashboard: Navigating to game with deckId:', selectedDeck);
       navigate(`/student/game?deckId=${selectedDeck}`);
+    } else {
+      console.warn('StudentDashboard: No deck selected');
     }
   };
 

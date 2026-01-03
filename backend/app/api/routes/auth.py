@@ -35,3 +35,4 @@ async def register(request: RegisterRequest):
             detail=str(e)
         )
 
+

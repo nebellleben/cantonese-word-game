@@ -1,6 +1,5 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosError } from 'axios';
 import type {
-  User,
   Deck,
   Word,
   GameSession,
@@ -15,6 +14,8 @@ import type {
   PronunciationResponse,
 } from '../types';
 
+// Get API base URL from environment variable or use default
+// @ts-ignore - Vite environment variables
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 class ApiClient {
@@ -26,35 +27,47 @@ class ApiClient {
       headers: {
         'Content-Type': 'application/json',
       },
-      timeout: 10000, // 10 second timeout
+      timeout: 10000, // 10 second timeout to prevent hanging
     });
 
-    // Add token to requests
-    this.client.interceptors.request.use((config) => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    });
+    // Request interceptor to add auth token
+    this.client.interceptors.request.use(
+      (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
 
-    // Handle errors globally
+    // Response interceptor for error handling
     this.client.interceptors.response.use(
       (response) => response,
-      (error) => {
-        if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
-          throw new Error('Cannot connect to server. Please make sure the backend is running on port 8000.');
+      (error: AxiosError) => {
+        // Handle timeout errors
+        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+          throw new Error('Request timed out. Please check if the backend server is running and accessible at ' + API_BASE_URL);
         }
+        
+        if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
+          throw new Error('Cannot connect to server. Please ensure the backend is running on port 8000.');
+        }
+        
         if (error.response) {
-          // Server responded with error status
-          const message = error.response.data?.message || error.response.data?.error || 'An error occurred';
+          const message = (error.response.data as any)?.message || 
+                        (error.response.data as any)?.error || 
+                        error.message;
           throw new Error(message);
         }
+        
         throw error;
       }
     );
   }
 
+  // Authentication
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     const response = await this.client.post<AuthResponse>('/auth/login', credentials);
     return response.data;
@@ -65,6 +78,7 @@ class ApiClient {
     return response.data;
   }
 
+  // Decks
   async getDecks(): Promise<Deck[]> {
     const response = await this.client.get<Deck[]>('/decks');
     return response.data;
@@ -75,9 +89,17 @@ class ApiClient {
     return response.data;
   }
 
+  // Games
   async startGame(request: StartGameRequest): Promise<GameSession> {
-    const response = await this.client.post<GameSession>('/games/start', request);
-    return response.data;
+    console.log('API: Starting game with request:', request);
+    try {
+      const response = await this.client.post<GameSession>('/games/start', request);
+      console.log('API: Game started successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('API: Error starting game:', error);
+      throw error;
+    }
   }
 
   async submitPronunciation(request: SubmitPronunciationRequest): Promise<PronunciationResponse> {
@@ -85,8 +107,9 @@ class ApiClient {
     formData.append('sessionId', request.sessionId);
     formData.append('wordId', request.wordId);
     formData.append('responseTime', request.responseTime.toString());
+    
     if (request.audioData) {
-      formData.append('audio', request.audioData, 'audio.wav');
+      formData.append('audio', request.audioData, 'recording.wav');
     }
 
     const response = await this.client.post<PronunciationResponse>(
@@ -106,12 +129,15 @@ class ApiClient {
     return response.data;
   }
 
+  // Statistics
   async getStatistics(userId?: string, deckId?: string): Promise<GameStatistics> {
-    const params: Record<string, string> = {};
-    if (userId) params.userId = userId;
-    if (deckId) params.deckId = deckId;
-
-    const response = await this.client.get<GameStatistics>('/statistics', { params });
+    const params = new URLSearchParams();
+    if (userId) params.append('userId', userId);
+    if (deckId) params.append('deckId', deckId);
+    
+    const response = await this.client.get<GameStatistics>(
+      `/statistics${params.toString() ? `?${params.toString()}` : ''}`
+    );
     return response.data;
   }
 
@@ -125,7 +151,7 @@ class ApiClient {
     return response.data;
   }
 
-  // Admin methods
+  // Admin endpoints
   async createDeck(name: string, description?: string): Promise<Deck> {
     const response = await this.client.post<Deck>('/admin/decks', { name, description });
     return response.data;
@@ -144,14 +170,13 @@ class ApiClient {
     await this.client.delete(`/admin/words/${wordId}`);
   }
 
-  async associateStudentWithTeacher(studentId: string, teacherId: string): Promise<void> {
+  async associateStudentTeacher(studentId: string, teacherId: string): Promise<void> {
     await this.client.post('/admin/associations', { studentId, teacherId });
   }
 
-  async resetPassword(userId: string, newPassword: string): Promise<void> {
-    await this.client.post(`/admin/users/${userId}/reset-password`, { password: newPassword });
+  async resetPassword(userId: string, password: string): Promise<void> {
+    await this.client.post(`/admin/users/${userId}/reset-password`, { password });
   }
 }
 
 export const apiClient = new ApiClient();
-

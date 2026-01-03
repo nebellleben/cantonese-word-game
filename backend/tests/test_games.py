@@ -102,3 +102,4 @@ def test_end_game(client, student_user):
     assert ended_session["score"] is not None
     assert "endedAt" in ended_session
 
+
