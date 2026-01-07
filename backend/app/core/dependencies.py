@@ -9,7 +9,7 @@ from app.db.database_service import DatabaseService
 security = HTTPBearer()
 
 
-def get_db_service(db: Depends(get_db_session)) -> DatabaseService:
+def get_db_service(db=Depends(get_db_session)) -> DatabaseService:
     """Get database service instance."""
     return DatabaseService(db)
 

@@ -49,5 +49,3 @@ class AuthService:
                 created_at=user["created_at"]
             )
         )
-
-

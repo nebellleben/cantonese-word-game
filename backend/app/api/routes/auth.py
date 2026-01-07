@@ -4,6 +4,7 @@ from app.services.auth_service import AuthService
 from app.core.dependencies import get_db_service
 from app.db.database_service import DatabaseService
 
+
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 

@@ -46,22 +46,34 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error: AxiosError) => {
-        // Handle timeout errors
-        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        // Handle timeout errors (axios timeout or connection timeout)
+        if (error.code === 'ECONNABORTED' || 
+            error.code === 'ETIMEDOUT' ||
+            error.message.includes('timeout') ||
+            error.message.includes('TIMED_OUT')) {
           throw new Error('Request timed out. Please check if the backend server is running and accessible at ' + API_BASE_URL);
         }
         
-        if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
+        // Handle connection errors (refused, network errors, or no response)
+        // ERR_NETWORK can occur for connection refused, timeout, or other network issues
+        // If there's no response, it's likely the backend isn't running
+        if (error.code === 'ECONNREFUSED' || 
+            error.code === 'ERR_NETWORK' ||
+            error.code === 'ERR_CONNECTION_REFUSED' ||
+            error.code === 'ERR_CONNECTION_TIMED_OUT' ||
+            (!error.response && error.message.includes('Network Error'))) {
           throw new Error('Cannot connect to server. Please ensure the backend is running on port 8000.');
         }
         
         if (error.response) {
-          const message = (error.response.data as any)?.message || 
-                        (error.response.data as any)?.error || 
-                        error.message;
+          const data = error.response.data as any;
+          const message =
+            data?.detail ||
+            data?.message ||
+            data?.error ||
+            error.message;
           throw new Error(message);
         }
-        
         throw error;
       }
     );
