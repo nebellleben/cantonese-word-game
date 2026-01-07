@@ -5,7 +5,6 @@ Tests that the backend API matches what the frontend expects.
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
-from app.db.mock_db import get_db
 
 client = TestClient(app)
 

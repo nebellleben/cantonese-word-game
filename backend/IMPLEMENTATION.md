@@ -23,7 +23,9 @@ backend/
 │   │   ├── security.py      # JWT and password hashing
 │   │   └── dependencies.py # FastAPI dependencies
 │   ├── db/
-│   │   └── mock_db.py      # Mock database (in-memory)
+│   │   ├── base.py         # SQLAlchemy engine and session
+│   │   ├── models.py       # SQLAlchemy models
+│   │   └── database_service.py # Database service layer (SQLAlchemy)
 │   ├── engines/
 │   │   ├── jyutping_engine.py        # Jyutping conversion (mocked)
 │   │   └── speech_recognition_engine.py # Speech recognition (mocked)
@@ -84,9 +86,10 @@ backend/
 
 ## Database
 
-- Mock in-memory database for development
-- Ready to be replaced with SQLite/PostgreSQL
-- Includes sample data (admin user, basic deck with words)
+- SQLAlchemy-based database layer using SQLite/PostgreSQL
+- `base.py` configures the engine, session and creates a default admin user
+- `models.py` defines all tables (users, decks, words, game sessions, attempts, associations, streaks)
+- `database_service.py` provides a high-level service API used by routes and services
 
 ## API Documentation
 
@@ -121,19 +124,17 @@ uv run pytest
 
 ## Next Steps
 
-1. Replace mock database with SQLite/PostgreSQL using SQLAlchemy
-2. Integrate real jyutping conversion library
-3. Integrate Cantonese speech recognition model
-4. Add integration tests
-5. Fix remaining test failures
-6. Add proper error handling and validation
-7. Add rate limiting
-8. Add logging
+1. Integrate real jyutping conversion library
+2. Integrate Cantonese speech recognition model
+3. Add more integration tests as needed
+4. Fix remaining test failures
+5. Add proper error handling and validation
+6. Add rate limiting
+7. Add logging
 
 ## Notes
 
 - Uses `uv` for dependency management as specified in BACKEND_AGENTS.md
-- Mock database uses fallback hashing (SHA256) when bcrypt fails (for development)
 - All endpoints follow OpenAPI specification
 - CORS configured for frontend origins
 
