@@ -31,6 +31,7 @@ const GamePage: React.FC = () => {
   } | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isStarting, setIsStarting] = useState(false); // Indicates microphone access is being requested
   const [realTimeRecognition, setRealTimeRecognition] = useState<string>('');
   const [recordedAudioBlob, setRecordedAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -46,6 +47,7 @@ const GamePage: React.FC = () => {
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
   const realTimeRecognitionRef = useRef<string>(''); // Ref to preserve recognition value
+  const preRequestedStreamRef = useRef<MediaStream | null>(null); // Pre-requested microphone stream
 
   const startGame = useCallback(async () => {
     if (!deckId) {
@@ -84,6 +86,7 @@ const GamePage: React.FC = () => {
     // Check if getUserMedia is supported
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       console.warn('getUserMedia is not supported in this browser');
+      return;
     }
 
     // Check if we're on HTTPS or localhost (required for getUserMedia)
@@ -94,7 +97,35 @@ const GamePage: React.FC = () => {
     
     if (!isSecureContext) {
       console.warn('getUserMedia requires HTTPS or localhost');
+      return;
     }
+
+    // Pre-request microphone access to reduce delay when user clicks record
+    // This requests permission early so it's already granted when needed
+    const preRequestMicrophone = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        preRequestedStreamRef.current = stream;
+        console.log('Microphone access pre-requested successfully');
+        // Don't stop the stream - keep it active for immediate use
+      } catch (err) {
+        // Permission denied or error - that's okay, we'll request again when user clicks
+        console.log('Pre-requesting microphone access failed (this is okay):', err);
+        preRequestedStreamRef.current = null;
+      }
+    };
+
+    // Request after a short delay to not block page load
+    const timeoutId = setTimeout(preRequestMicrophone, 500);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      // Clean up pre-requested stream on unmount
+      if (preRequestedStreamRef.current) {
+        preRequestedStreamRef.current.getTracks().forEach(track => track.stop());
+        preRequestedStreamRef.current = null;
+      }
+    };
   }, []);
 
   // Audio level monitoring - use time domain data for accurate volume
@@ -342,7 +373,6 @@ const GamePage: React.FC = () => {
     }
 
     try {
-      setIsRecording(true);
       setLastFeedback(null);
       setShowFeedback(false);
       setError(''); // Clear any previous errors
@@ -365,32 +395,40 @@ const GamePage: React.FC = () => {
       }
       setAudioUrl(null);
       
-      // Request microphone access
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-
-      // Set up audio analysis for volume bar
-      const audioContext = new AudioContext();
-      
-      // Resume audio context if suspended (required in some browsers)
-      if (audioContext.state === 'suspended') {
-        await audioContext.resume();
+      // Only show "Starting..." if we don't have a pre-requested stream
+      // (if we have one, it should be instant)
+      if (!preRequestedStreamRef.current || !preRequestedStreamRef.current.active) {
+        setIsStarting(true);
       }
       
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.8; // Smooth the volume readings
-      const source = audioContext.createMediaStreamSource(stream);
-      source.connect(analyser);
+      // Always get a fresh stream for recording (MediaRecorder works better with fresh streams)
+      // But if we have a pre-requested stream, permission is already granted so this should be fast
+      const hasPreRequested = preRequestedStreamRef.current && preRequestedStreamRef.current.active;
       
-      audioContextRef.current = audioContext;
-      analyserRef.current = analyser;
+      if (hasPreRequested) {
+        // Permission already granted, so this should be very fast
+        // Clear "Starting..." immediately since permission is already granted
+        setIsStarting(false);
+      }
       
-      console.log('Audio context set up:', { 
-        state: audioContext.state, 
-        analyserReady: !!analyser 
-      });
+      // Always get a fresh stream for the actual recording
+      // This ensures MediaRecorder works correctly
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Hide "Starting..." if we didn't already (in case pre-request failed)
+      setIsStarting(false);
+      
+      // Update pre-requested stream for next time (but don't use it for recording)
+      if (preRequestedStreamRef.current) {
+        // Stop the old pre-requested stream since we have a new one
+        preRequestedStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      preRequestedStreamRef.current = stream;
+      
+      // Show recording state
+      setIsRecording(true);
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
 
       // Create a fresh audioChunks array for this recording session
       const audioChunks: Blob[] = [];
@@ -532,12 +570,13 @@ const GamePage: React.FC = () => {
         stream.getTracks().forEach((track) => track.stop());
       };
 
-      // Start recording with timeslice to ensure data is collected
+      // Start recording IMMEDIATELY - don't wait for AudioContext setup
       // Using timeslice of 100ms to ensure data chunks are collected regularly
       try {
         mediaRecorder.start(100);
       } catch (startErr) {
         console.error('Failed to start MediaRecorder:', startErr);
+        setIsStarting(false);
         setIsRecording(false);
         setAudioLevel(0);
         setError(t('recordingStartFailed') || 'Failed to start recording. Please try again.');
@@ -557,8 +596,39 @@ const GamePage: React.FC = () => {
       
       // Reset stop flag when starting new recording
       shouldStopRecognitionRef.current = false;
+      
+      // Set up audio analysis for volume bar ASYNCHRONOUSLY (non-blocking)
+      // This allows recording to start immediately while volume bar setup happens in background
+      (async () => {
+        try {
+          const audioContext = new AudioContext();
+          
+          // Resume audio context if suspended (required in some browsers)
+          if (audioContext.state === 'suspended') {
+            await audioContext.resume();
+          }
+          
+          const analyser = audioContext.createAnalyser();
+          analyser.fftSize = 256;
+          analyser.smoothingTimeConstant = 0.8; // Smooth the volume readings
+          const source = audioContext.createMediaStreamSource(stream);
+          source.connect(analyser);
+          
+          audioContextRef.current = audioContext;
+          analyserRef.current = analyser;
+          
+          console.log('Audio context set up:', { 
+            state: audioContext.state, 
+            analyserReady: !!analyser 
+          });
+        } catch (err) {
+          console.error('Failed to set up audio analysis:', err);
+          // Don't fail recording if audio analysis setup fails
+        }
+      })();
     } catch (err: any) {
       console.error('Failed to access microphone:', err);
+      setIsStarting(false);
       setIsRecording(false);
       setAudioLevel(0);
       
@@ -760,7 +830,7 @@ const GamePage: React.FC = () => {
           word={currentWord.text}
           onSwipe={handleSwipe}
           onComplete={handleRecord}
-          disabled={isRecording}
+          disabled={isRecording || isStarting}
           showFeedback={showFeedback}
           feedback={lastFeedback}
           realTimeRecognition={isRecording ? realTimeRecognition : ''}
@@ -776,6 +846,14 @@ const GamePage: React.FC = () => {
                 style={{ width: `${audioLevel * 100}%` }}
               ></div>
             </div>
+          </div>
+        )}
+
+        {/* Starting Message - shown while requesting microphone access */}
+        {isStarting && (
+          <div className="processing-message">
+            <div className="processing-spinner">🎤</div>
+            <div className="processing-text">{t('startingRecording') || 'Starting recording...'}</div>
           </div>
         )}
 
