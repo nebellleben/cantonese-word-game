@@ -4,6 +4,32 @@ from app.api.models.schemas import GameSession, StartGameRequest, PronunciationR
 from app.core.dependencies import get_current_user, get_db_service
 from app.services.game_service import GameService
 from app.db.database_service import DatabaseService
+import json
+import time
+
+DEBUG_LOG_PATH = "/Users/kelvinchan/dev/test/cantonese-word-game/.cursor/debug.log"
+
+
+def _log(message: str, data: dict, location: str, hypothesis_id: str) -> None:
+    """Append a small NDJSON log line for pronunciation route debugging."""
+    # #region agent log
+    try:
+        payload = {
+            "sessionId": "debug-session",
+            "runId": "backend-games-route",
+            "hypothesisId": hypothesis_id,
+            "location": location,
+            "message": message,
+            "data": data,
+            "timestamp": int(time.time() * 1000),
+        }
+        with open(DEBUG_LOG_PATH, "a") as f:
+            f.write(json.dumps(payload) + "\n")
+    except Exception:
+        # Avoid breaking route on logging failure
+        pass
+    # #endregion
+
 
 router = APIRouter(prefix="/games", tags=["Games"])
 
@@ -36,6 +62,17 @@ async def submit_pronunciation(
 ):
     """Submit pronunciation attempt."""
     try:
+        _log(
+            "submit_pronunciation route called",
+            {
+                "session_id": str(sessionId),
+                "word_id": str(wordId),
+                "response_time": responseTime,
+                "has_current_user": current_user is not None,
+            },
+            "games.py:submit_pronunciation:1",
+            "ROUTE-GAME-A",
+        )
         game_service = GameService(db_service)
         audio_data = None
         if audio:
@@ -56,6 +93,12 @@ async def submit_pronunciation(
             expectedJyutping=expected_jyutping
         )
     except ValueError as e:
+        _log(
+            "submit_pronunciation raised ValueError",
+            {"error": str(e)},
+            "games.py:submit_pronunciation:2",
+            "ROUTE-GAME-B",
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)

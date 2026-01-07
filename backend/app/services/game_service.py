@@ -5,6 +5,11 @@ from datetime import datetime, date
 from app.db.database_service import DatabaseService
 from app.api.models.schemas import GameSession, GameWord, Word
 from app.engines.speech_recognition_engine import speech_recognition_engine
+import json
+import time
+
+
+DEBUG_LOG_PATH = "/Users/kelvinchan/dev/test/cantonese-word-game/.cursor/debug.log"
 
 
 class GameService:
@@ -12,6 +17,26 @@ class GameService:
     
     def __init__(self, db_service: DatabaseService):
         self.db = db_service
+
+    def _log(self, message: str, data: dict, location: str, hypothesis_id: str) -> None:
+        """Append a small NDJSON log line for pronunciation debugging."""
+        # #region agent log
+        try:
+            payload = {
+                "sessionId": "debug-session",
+                "runId": "backend-game",
+                "hypothesisId": hypothesis_id,
+                "location": location,
+                "message": message,
+                "data": data,
+                "timestamp": int(time.time() * 1000),
+            }
+            with open(DEBUG_LOG_PATH, "a") as f:
+                f.write(json.dumps(payload) + "\n")
+        except Exception:
+            # Never break game flow on logging failure
+            pass
+        # #endregion
     
     def start_game(self, user_id: UUID, deck_id: UUID) -> GameSession:
         """Start a new game session."""
@@ -61,18 +86,47 @@ class GameService:
         audio_data: bytes = None
     ) -> tuple[bool, str, Optional[str], str, str]:
         """Submit a pronunciation attempt."""
+        self._log(
+            "submit_pronunciation called",
+            {
+                "session_id": str(session_id),
+                "word_id": str(word_id),
+                "response_time": response_time,
+                "has_audio": bool(audio_data),
+            },
+            "game_service.py:submit_pronunciation:1",
+            "GAME-A",
+        )
         # Verify session exists
         session = self.db.get_game_session(session_id)
         if not session:
+            self._log(
+                "session not found",
+                {"session_id": str(session_id)},
+                "game_service.py:submit_pronunciation:2",
+                "GAME-B",
+            )
             raise ValueError("Game session not found")
         
         # Verify word is in session
         if word_id not in session["word_ids"]:
+            self._log(
+                "word not in session",
+                {"session_id": str(session_id), "word_id": str(word_id), "session_word_ids": [str(w) for w in session["word_ids"]]},
+                "game_service.py:submit_pronunciation:3",
+                "GAME-C",
+            )
             raise ValueError("Word not in this game session")
         
         # Get word data
         word = self.db.get_word(word_id)
         if not word:
+            self._log(
+                "word not found in DB",
+                {"word_id": str(word_id)},
+                "game_service.py:submit_pronunciation:4",
+                "GAME-D",
+            )
             raise ValueError("Word not found")
         
         # Evaluate pronunciation
@@ -80,6 +134,18 @@ class GameService:
             audio_data or b"",
             word["text"],
             word["jyutping"]
+        )
+        self._log(
+            "pronunciation evaluated",
+            {
+                "session_id": str(session_id),
+                "word_id": str(word_id),
+                "is_correct": is_correct,
+                "feedback": feedback,
+                "recognized_jyutping": recognized_jyutping,
+            },
+            "game_service.py:submit_pronunciation:5",
+            "GAME-E",
         )
         
         # Record attempt
