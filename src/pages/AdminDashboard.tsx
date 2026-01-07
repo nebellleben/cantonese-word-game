@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { apiClient } from '../services/api';
-import type { Deck, Word, Student, GameStatistics } from '../types';
+import type { Deck, Word, Student, GameStatistics, User } from '../types';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import './AdminDashboard.css';
 
@@ -25,6 +25,7 @@ const AdminDashboard: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
+  const [teachers, setTeachers] = useState<User[]>([]);
   
   // Statistics state
   const [selectedStudentForStats, setSelectedStudentForStats] = useState<string>('');
@@ -74,21 +75,22 @@ const AdminDashboard: React.FC = () => {
     try {
       // Only load essential data upfront - decks and students
       // Statistics and teachers can be loaded on-demand
-      const [deckList, studentList] = await Promise.all([
+      const [deckList, studentList, teacherList] = await Promise.all([
         apiClient.getDecks(),
         apiClient.getStudents(),
+        apiClient.getTeachers(),
       ]);
       setDecks(deckList);
       setStudents(studentList);
+      setTeachers(teacherList);
       
-      // For teachers, we'll use students list filtered by role when needed
-      // Since there's no separate teachers endpoint, we'll handle this in the UI
       if (studentList.length > 0) {
         setSelectedStudentForStats(studentList[0].id);
         setSelectedStudentId(studentList[0].id);
         setSelectedUserForPassword(studentList[0].id);
-        // Set first student as default teacher selection (will be filtered in UI)
-        setSelectedTeacherId(studentList[0].id);
+      }
+      if (teacherList.length > 0) {
+        setSelectedTeacherId(teacherList[0].id);
       }
       if (deckList.length > 0) {
         setSelectedDeckId(deckList[0].id);
@@ -233,8 +235,12 @@ const AdminDashboard: React.FC = () => {
   }
 
   // All users for password management (students and teachers)
-  // Note: In a real app, there would be separate endpoints for students and teachers
-  const allUsers = students;
+  const allUsers: User[] = [
+    ...students,
+    ...teachers.filter(
+      (teacher) => !students.some((s) => s.id === teacher.id)
+    ),
+  ];
 
   return (
     <div className="admin-dashboard">
@@ -408,14 +414,12 @@ const AdminDashboard: React.FC = () => {
                 value={selectedTeacherId}
                 onChange={(e) => setSelectedTeacherId(e.target.value)}
               >
-                {/* Note: In a real app, there would be a separate teachers endpoint */}
-                {/* For now, we'll show all users and let the backend validate */}
-                {students.map((user) => (
+                {teachers.map((user) => (
                   <option key={user.id} value={user.id}>
-                    {user.username} ({user.role})
+                    {user.username}
                   </option>
                 ))}
-                {students.length === 0 && (
+                {teachers.length === 0 && (
                   <option value="">No users available</option>
                 )}
               </select>
@@ -502,7 +506,7 @@ const AdminDashboard: React.FC = () => {
               >
                 {allUsers.map((user) => (
                   <option key={user.id} value={user.id}>
-                    {user.username} ({user.role})
+                    {user.username}
                   </option>
                 ))}
               </select>

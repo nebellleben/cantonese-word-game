@@ -23,7 +23,8 @@ async def create_deck(
         id=deck["id"],
         name=deck["name"],
         description=deck.get("description"),
-        createdAt=deck["created_at"]
+        createdAt=deck["created_at"],
+        wordCount=deck.get("word_count", 0),
     )
 
 

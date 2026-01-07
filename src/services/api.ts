@@ -6,6 +6,7 @@ import type {
   GameStatistics,
   Student,
   WrongWord,
+  User,
   LoginRequest,
   RegisterRequest,
   AuthResponse,
@@ -155,6 +156,11 @@ class ApiClient {
 
   async getStudents(): Promise<Student[]> {
     const response = await this.client.get<Student[]>('/students');
+    return response.data;
+  }
+
+  async getTeachers(): Promise<User[]> {
+    const response = await this.client.get<User[]>('/teachers');
     return response.data;
   }
 

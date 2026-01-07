@@ -97,13 +97,27 @@ class DatabaseService:
     
     def get_all_decks(self) -> List[Dict]:
         """Get all decks."""
-        decks = self.db.query(Deck).all()
+        # Include word counts for each deck so the frontend can display them
+        decks = (
+            self.db.query(
+                Deck.id,
+                Deck.name,
+                Deck.description,
+                Deck.created_at,
+                func.count(Word.id).label("word_count"),
+            )
+            .outerjoin(Word, Word.deck_id == Deck.id)
+            .group_by(Deck.id)
+            .all()
+        )
+
         return [
             {
                 "id": UUID(deck.id),
                 "name": deck.name,
                 "description": deck.description,
                 "created_at": deck.created_at,
+                "word_count": deck.word_count,
             }
             for deck in decks
         ]
@@ -120,6 +134,7 @@ class DatabaseService:
             "name": deck.name,
             "description": deck.description,
             "created_at": deck.created_at,
+            "word_count": 0,
         }
     
     def delete_deck(self, deck_id: UUID) -> bool:
@@ -379,6 +394,20 @@ class DatabaseService:
     def get_all_students(self) -> List[Dict]:
         """Get all students."""
         users = self.db.query(User).filter(User.role == "student").all()
+        return [
+            {
+                "id": UUID(user.id),
+                "username": user.username,
+                "password_hash": user.password_hash,
+                "role": user.role,
+                "created_at": user.created_at,
+            }
+            for user in users
+        ]
+    
+    def get_all_teachers(self) -> List[Dict]:
+        """Get all teachers."""
+        users = self.db.query(User).filter(User.role == "teacher").all()
         return [
             {
                 "id": UUID(user.id),

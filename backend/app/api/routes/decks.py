@@ -20,7 +20,8 @@ async def get_decks(
             id=deck["id"],
             name=deck["name"],
             description=deck.get("description"),
-            createdAt=deck["created_at"]
+            createdAt=deck["created_at"],
+            wordCount=deck.get("word_count", 0),
         )
         for deck in decks
     ]

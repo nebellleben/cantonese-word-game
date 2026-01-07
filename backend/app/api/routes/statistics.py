@@ -1,8 +1,13 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Query
 from uuid import UUID
 from typing import Optional, List
-from app.api.models.schemas import GameStatistics, Student, WrongWord
-from app.core.dependencies import get_current_user, get_current_teacher_or_admin, get_db_service
+from app.api.models.schemas import GameStatistics, Student, WrongWord, User
+from app.core.dependencies import (
+    get_current_user,
+    get_current_teacher_or_admin,
+    get_current_admin,
+    get_db_service,
+)
 from app.services.statistics_service import StatisticsService
 from app.db.database_service import DatabaseService
 
@@ -52,6 +57,24 @@ async def get_students(
     """Get list of students."""
     statistics_service = StatisticsService(db_service)
     return statistics_service.get_students(current_user["id"], current_user["role"])
+
+
+@router.get("/teachers", response_model=List[User], status_code=status.HTTP_200_OK)
+async def get_teachers(
+    current_user: dict = Depends(get_current_admin),
+    db_service: DatabaseService = Depends(get_db_service)
+):
+    """Get list of teachers (admin only)."""
+    teachers = db_service.get_all_teachers()
+    return [
+        User(
+            id=teacher["id"],
+            username=teacher["username"],
+            role=teacher["role"],
+            createdAt=teacher["created_at"],
+        )
+        for teacher in teachers
+    ]
 
 
 @router.get("/words/error-ratios", response_model=List[WrongWord], status_code=status.HTTP_200_OK)

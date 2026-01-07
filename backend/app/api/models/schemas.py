@@ -20,6 +20,7 @@ class Deck(BaseModel):
     name: str
     description: Optional[str] = None
     createdAt: datetime
+    wordCount: int = 0
     
     model_config = ConfigDict(populate_by_name=True)
 

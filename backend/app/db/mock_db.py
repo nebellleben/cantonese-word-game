@@ -110,6 +110,7 @@ class MockDatabase:
             "name": name,
             "description": description,
             "created_at": datetime.utcnow(),
+            "word_count": 0,
         }
         self.decks[deck_id] = deck
         return deck
@@ -120,7 +121,14 @@ class MockDatabase:
     
     def get_all_decks(self) -> List[Dict]:
         """Get all decks."""
-        return list(self.decks.values())
+        # Attach word counts for each deck
+        decks_with_counts: List[Dict] = []
+        for deck_id, deck in self.decks.items():
+            word_count = sum(1 for w in self.words.values() if w["deck_id"] == deck_id)
+            deck_copy = dict(deck)
+            deck_copy["word_count"] = word_count
+            decks_with_counts.append(deck_copy)
+        return decks_with_counts
     
     def delete_deck(self, deck_id: UUID) -> bool:
         """Delete a deck."""
@@ -266,6 +274,10 @@ class MockDatabase:
     def get_all_students(self) -> List[Dict]:
         """Get all students."""
         return [user for user in self.users.values() if user["role"] == "student"]
+    
+    def get_all_teachers(self) -> List[Dict]:
+        """Get all teachers."""
+        return [user for user in self.users.values() if user["role"] == "teacher"]
     
     # User streak operations
     def update_user_streak(self, user_id: UUID, game_date: date):
