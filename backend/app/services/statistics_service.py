@@ -60,7 +60,16 @@ class StatisticsService:
         
         # Get top wrong words
         attempts = self.db.get_attempts_by_user(stats_user_id, deck_id)
+        # #region agent log
+        import json
+        with open('/Users/kelvinchan/dev/test/cantonese-word-game/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"location":"statistics_service.py:62","message":"get_statistics attempts retrieved","data":{"attempts_count":len(attempts),"deck_id":str(deck_id) if deck_id else None},"timestamp":int(__import__('time').time()*1000),"sessionId":"debug-session","runId":"run1","hypothesisId":"D,E"})+"\n")
+        # #endregion
         top_wrong_words = self._calculate_wrong_words(attempts)
+        # #region agent log
+        with open('/Users/kelvinchan/dev/test/cantonese-word-game/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"location":"statistics_service.py:64","message":"get_statistics top_wrong_words calculated","data":{"top_wrong_words_count":len(top_wrong_words),"first_word":dict(top_wrong_words[0]) if top_wrong_words else None},"timestamp":int(__import__('time').time()*1000),"sessionId":"debug-session","runId":"run1","hypothesisId":"A,B,D"})+"\n")
+        # #endregion
         
         return GameStatistics(
             totalGames=total_games,
@@ -126,6 +135,11 @@ class StatisticsService:
     
     def _calculate_wrong_words(self, attempts: List[dict]) -> List[WrongWord]:
         """Calculate wrong word statistics from attempts."""
+        # #region agent log
+        import json
+        with open('/Users/kelvinchan/dev/test/cantonese-word-game/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"location":"statistics_service.py:127","message":"_calculate_wrong_words entry","data":{"attempts_count":len(attempts)},"timestamp":int(__import__('time').time()*1000),"sessionId":"debug-session","runId":"run1","hypothesisId":"D"})+"\n")
+        # #endregion
         word_stats = defaultdict(lambda: {"correct": 0, "incorrect": 0})
         
         for attempt in attempts:
@@ -142,18 +156,27 @@ class StatisticsService:
                 continue
             
             total_attempts = stats["correct"] + stats["incorrect"]
-            error_count = stats["incorrect"]
-            error_ratio = error_count / total_attempts if total_attempts > 0 else 0.0
+            wrong_count = stats["incorrect"]
+            ratio = wrong_count / total_attempts if total_attempts > 0 else 0.0
             
-            wrong_words.append(WrongWord(
+            wrong_word = WrongWord(
                 wordId=word_id,
-                text=word["text"],
-                errorCount=error_count,
+                word=word["text"],
+                wrongCount=wrong_count,
                 totalAttempts=total_attempts,
-                errorRatio=error_ratio
-            ))
+                ratio=ratio
+            )
+            # #region agent log
+            with open('/Users/kelvinchan/dev/test/cantonese-word-game/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"location":"statistics_service.py:154","message":"_calculate_wrong_words WrongWord created","data":{"word_id":str(word_id),"word":word["text"],"wrongCount":wrong_count,"ratio":ratio,"wrongWord_dict":wrong_word.model_dump()},"timestamp":int(__import__('time').time()*1000),"sessionId":"debug-session","runId":"run1","hypothesisId":"A"})+"\n")
+            # #endregion
+            wrong_words.append(wrong_word)
         
         # Sort by error ratio (descending)
-        wrong_words.sort(key=lambda x: x.errorRatio, reverse=True)
+        wrong_words.sort(key=lambda x: x.ratio, reverse=True)
+        # #region agent log
+        with open('/Users/kelvinchan/dev/test/cantonese-word-game/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"location":"statistics_service.py:158","message":"_calculate_wrong_words return","data":{"wrong_words_count":len(wrong_words),"first_word_dict":wrong_words[0].model_dump() if wrong_words else None},"timestamp":int(__import__('time').time()*1000),"sessionId":"debug-session","runId":"run1","hypothesisId":"A,B"})+"\n")
+        # #endregion
         return wrong_words
 

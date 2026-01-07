@@ -5,8 +5,10 @@ Uses HuggingFace Whisper model fine-tuned for Cantonese speech recognition.
 """
 from typing import Optional, Tuple
 import io
+import json
 import random
 import re
+import time
 import torch
 import librosa
 
@@ -176,7 +178,8 @@ class SpeechRecognitionEngine:
         self,
         audio_data: bytes,
         expected_text: str,
-        expected_jyutping: str
+        expected_jyutping: str,
+        real_time_recognition: Optional[str] = None
     ) -> Tuple[bool, Optional[str], Optional[str]]:
         """
         Evaluate if the pronunciation matches the expected word.
@@ -185,18 +188,26 @@ class SpeechRecognitionEngine:
             audio_data: Audio file bytes (WAV format)
             expected_text: Expected Chinese text
             expected_jyutping: Expected Jyutping transliteration (for display purposes only)
+            real_time_recognition: Optional real-time recognition text from Web Speech API.
+                                 If provided and non-empty, this will be used for comparison
+                                 instead of transcribing the audio with HuggingFace Whisper.
             
         Returns:
             Tuple of (is_correct: bool, feedback: Optional[str], recognized_text: Optional[str])
             where recognized_text is Chinese characters
         """
         try:
-            # Transcribe audio to Chinese characters
-            if audio_data and len(audio_data) > 0:
-                recognized_text = self._transcribe_audio(audio_data)
+            # Use real-time recognition if provided, otherwise transcribe with HuggingFace Whisper
+            if real_time_recognition and real_time_recognition.strip():
+                # Use real-time recognition from Web Speech API
+                recognized_text = real_time_recognition.strip()
             else:
-                # No audio provided - for testing, we'll use a mock
-                recognized_text = self._transcribe_audio(b"mock")
+                # Fall back to HuggingFace Whisper transcription
+                if audio_data and len(audio_data) > 0:
+                    recognized_text = self._transcribe_audio(audio_data)
+                else:
+                    # No audio provided - for testing, we'll use a mock
+                    recognized_text = self._transcribe_audio(b"mock")
             
             # Compare with expected Chinese characters
             is_correct = self._compare_pronunciation(recognized_text, expected_text)

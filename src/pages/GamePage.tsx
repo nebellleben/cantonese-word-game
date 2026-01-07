@@ -45,6 +45,7 @@ const GamePage: React.FC = () => {
   const shouldStopRecognitionRef = useRef<boolean>(false);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
+  const realTimeRecognitionRef = useRef<string>(''); // Ref to preserve recognition value
 
   const startGame = useCallback(async () => {
     if (!deckId) {
@@ -167,6 +168,7 @@ const GamePage: React.FC = () => {
       setShowFeedback(false);
       setIsProcessing(false);
       setRealTimeRecognition('');
+      realTimeRecognitionRef.current = ''; // Clear ref when moving to next word
       setIsPlaying(false);
       setError(''); // Clear any errors
       shouldStopRecognitionRef.current = false; // Reset stop flag for next word
@@ -201,6 +203,7 @@ const GamePage: React.FC = () => {
       }
       if (!isRecording) {
         setRealTimeRecognition('');
+        // Don't clear the ref here - we need it for capture in onstop
       }
       return;
     }
@@ -234,6 +237,7 @@ const GamePage: React.FC = () => {
       const displayText = finalTranscript || interimTranscript;
       if (displayText) {
         setRealTimeRecognition(displayText);
+        realTimeRecognitionRef.current = displayText; // Store in ref for reliable access
       }
     };
 
@@ -344,6 +348,7 @@ const GamePage: React.FC = () => {
       setError(''); // Clear any previous errors
       setAudioLevel(0);
       setRealTimeRecognition('');
+      realTimeRecognitionRef.current = ''; // Clear ref when starting new recording
       
       // Stop any ongoing audio playback
       if (audioPlayerRef.current) {
@@ -400,6 +405,8 @@ const GamePage: React.FC = () => {
       };
 
       mediaRecorder.onstop = async () => {
+        // Capture real-time recognition from ref (more reliable than state)
+        const capturedRealTimeRecognition = realTimeRecognitionRef.current || realTimeRecognition;
         // Set flag to prevent recognition from restarting
         shouldStopRecognitionRef.current = true;
         
@@ -478,6 +485,7 @@ const GamePage: React.FC = () => {
             wordId: session.words[currentWordIndex].wordId,
             audioData: audioBlob,
             responseTime,
+            realTimeRecognition: capturedRealTimeRecognition,
           });
 
           // Show feedback immediately with comparison details
@@ -491,6 +499,7 @@ const GamePage: React.FC = () => {
           setShowFeedback(true);
           setIsProcessing(false); // Hide processing message when feedback is shown
           setRealTimeRecognition(''); // Clear real-time recognition after showing feedback
+          realTimeRecognitionRef.current = ''; // Clear ref after showing feedback
 
           // Update session
           const updatedWords = [...session.words];

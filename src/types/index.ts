@@ -110,6 +110,7 @@ export interface SubmitPronunciationRequest {
   wordId: string;
   audioData?: Blob;
   responseTime: number;
+  realTimeRecognition?: string;
 }
 
 export interface PronunciationResponse {

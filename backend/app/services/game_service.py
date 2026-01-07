@@ -83,7 +83,8 @@ class GameService:
         session_id: UUID,
         word_id: UUID,
         response_time: int,
-        audio_data: bytes = None
+        audio_data: bytes = None,
+        real_time_recognition: Optional[str] = None
     ) -> tuple[bool, str, Optional[str], str, str]:
         """Submit a pronunciation attempt."""
         self._log(
@@ -93,6 +94,7 @@ class GameService:
                 "word_id": str(word_id),
                 "response_time": response_time,
                 "has_audio": bool(audio_data),
+                "has_real_time_recognition": real_time_recognition is not None and real_time_recognition != "",
             },
             "game_service.py:submit_pronunciation:1",
             "GAME-A",
@@ -129,11 +131,13 @@ class GameService:
             )
             raise ValueError("Word not found")
         
+        
         # Evaluate pronunciation
         is_correct, feedback, recognized_text = speech_recognition_engine.evaluate_pronunciation(
             audio_data or b"",
             word["text"],
-            word["jyutping"]
+            word["jyutping"],
+            real_time_recognition=real_time_recognition
         )
         self._log(
             "pronunciation evaluated",

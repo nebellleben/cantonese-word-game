@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File, Form
+from typing import Optional
 from uuid import UUID
 from app.api.models.schemas import GameSession, StartGameRequest, PronunciationResponse
 from app.core.dependencies import get_current_user, get_db_service
@@ -57,6 +58,7 @@ async def submit_pronunciation(
     wordId: UUID = Form(...),
     responseTime: int = Form(...),
     audio: UploadFile = File(None),
+    realTimeRecognition: Optional[str] = Form(None),
     current_user: dict = Depends(get_current_user),
     db_service: DatabaseService = Depends(get_db_service)
 ):
@@ -69,6 +71,7 @@ async def submit_pronunciation(
                 "word_id": str(wordId),
                 "response_time": responseTime,
                 "has_current_user": current_user is not None,
+                "has_real_time_recognition": realTimeRecognition is not None and realTimeRecognition != "",
             },
             "games.py:submit_pronunciation:1",
             "ROUTE-GAME-A",
@@ -82,7 +85,8 @@ async def submit_pronunciation(
             sessionId,
             wordId,
             responseTime,
-            audio_data
+            audio_data,
+            real_time_recognition=realTimeRecognition
         )
         
         return PronunciationResponse(

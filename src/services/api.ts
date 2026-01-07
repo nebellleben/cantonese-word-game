@@ -125,6 +125,10 @@ class ApiClient {
     if (request.audioData) {
       formData.append('audio', request.audioData, 'recording.wav');
     }
+    
+    if (request.realTimeRecognition) {
+      formData.append('realTimeRecognition', request.realTimeRecognition);
+    }
 
     const response = await this.client.post<PronunciationResponse>(
       '/games/pronunciation',
@@ -145,6 +149,9 @@ class ApiClient {
 
   // Statistics
   async getStatistics(userId?: string, deckId?: string): Promise<GameStatistics> {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/77ff5847-3690-4c03-a8f2-3e97efcf00cb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:151',message:'getStatistics entry',data:{userId,deckId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     const params = new URLSearchParams();
     if (userId) params.append('userId', userId);
     if (deckId) params.append('deckId', deckId);
@@ -152,6 +159,9 @@ class ApiClient {
     const response = await this.client.get<GameStatistics>(
       `/statistics${params.toString() ? `?${params.toString()}` : ''}`
     );
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/77ff5847-3690-4c03-a8f2-3e97efcf00cb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:159',message:'getStatistics response received',data:{hasData:!!response.data,topWrongWordsLength:response.data?.topWrongWords?.length||0,firstWordKeys:response.data?.topWrongWords?.[0]?Object.keys(response.data.topWrongWords[0]):[],firstWord:response.data?.topWrongWords?.[0]||null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,C'})}).catch(()=>{});
+    // #endregion
     return response.data;
   }
 

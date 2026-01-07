@@ -14,14 +14,19 @@ The speech recognition engine now uses **HuggingFace Whisper** fine-tuned for Ca
 ## How It Works
 
 1. **Audio Input**: User records pronunciation (WAV format)
-2. **Whisper Transcription**: 
+2. **Real-Time Recognition (Primary)**:
+   - Frontend uses Web Speech API to show real-time recognition to users
+   - Real-time recognition text is captured and sent to backend along with audio
+   - **Comparison uses the real-time recognition text** - ensuring consistency with what the user sees
+3. **HuggingFace Whisper Transcription (Fallback)**: 
+   - If real-time recognition is not available or empty, falls back to HuggingFace Whisper
    - Audio is loaded from bytes and resampled to 16kHz
    - Processed with WhisperProcessor and transcribed using the Cantonese-optimized model
    - Model is specifically fine-tuned for Cantonese, providing better accuracy than general-purpose models
-3. **Comparison**: 
-   - Recognized Chinese characters are compared directly with expected Chinese characters
+4. **Comparison**: 
+   - Recognized Chinese characters (from real-time recognition or Whisper) are compared directly with expected Chinese characters
    - Returns match result and detailed feedback
-4. **Display**: 
+5. **Display**: 
    - Jyutping is only used for display purposes after evaluation
    - Shows the correct pronunciation in jyutping format to help users learn
 
@@ -130,6 +135,16 @@ print('Processor loaded:', speech_recognition_engine.processor is not None)
 "
 ```
 
+## Real-Time Recognition Priority
+
+The system prioritizes real-time recognition from the Web Speech API for comparison:
+
+1. **Primary**: Real-time recognition text (from Web Speech API) is used for comparison if provided
+2. **Fallback**: HuggingFace Whisper transcription is used if real-time recognition is missing or empty
+3. **Final Fallback**: Mock implementation if both fail
+
+This ensures that the comparison result matches what the user sees in real-time, providing a consistent user experience.
+
 ## Notes
 
 - The model is specifically fine-tuned for Cantonese, providing better accuracy than general-purpose Whisper models
@@ -137,4 +152,5 @@ print('Processor loaded:', speech_recognition_engine.processor is not None)
 - Output is in Chinese characters, which are compared directly with expected Chinese characters
 - Jyutping is only used for display purposes to show the correct pronunciation after evaluation
 - The model achieves a Character Error Rate (CER) of 7.93 on Common Voice 16.0, demonstrating strong Cantonese recognition capabilities
+- **Real-time recognition takes precedence**: The system uses Web Speech API recognition for comparison when available, ensuring users' expectations match the evaluation results
 

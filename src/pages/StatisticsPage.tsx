@@ -29,13 +29,22 @@ const StatisticsPage: React.FC = () => {
 
   const loadData = async () => {
     try {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/77ff5847-3690-4c03-a8f2-3e97efcf00cb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StatisticsPage.tsx:30',message:'loadData entry',data:{selectedDeckId:'all'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,C'})}).catch(()=>{});
+      // #endregion
       const [deckList, stats] = await Promise.all([
         apiClient.getDecks(),
         apiClient.getStatistics(undefined, 'all'),
       ]);
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/77ff5847-3690-4c03-a8f2-3e97efcf00cb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StatisticsPage.tsx:37',message:'loadData stats received',data:{statsExists:!!stats,topWrongWordsLength:stats?.topWrongWords?.length||0,topWrongWordsType:typeof stats?.topWrongWords,firstWord:stats?.topWrongWords?.[0]||null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,C'})}).catch(()=>{});
+      // #endregion
       setDecks(deckList);
       setStatistics(stats);
     } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/77ff5847-3690-4c03-a8f2-3e97efcf00cb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StatisticsPage.tsx:39',message:'loadData error',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       console.error('Failed to load data:', error);
     } finally {
       setLoading(false);
@@ -44,12 +53,21 @@ const StatisticsPage: React.FC = () => {
 
   const loadStatistics = async () => {
     try {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/77ff5847-3690-4c03-a8f2-3e97efcf00cb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StatisticsPage.tsx:45',message:'loadStatistics entry',data:{selectedDeckId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
       const stats = await apiClient.getStatistics(
         undefined,
         selectedDeckId === 'all' ? undefined : selectedDeckId
       );
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/77ff5847-3690-4c03-a8f2-3e97efcf00cb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StatisticsPage.tsx:51',message:'loadStatistics stats received',data:{statsExists:!!stats,topWrongWordsLength:stats?.topWrongWords?.length||0,firstWord:stats?.topWrongWords?.[0]||null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,E'})}).catch(()=>{});
+      // #endregion
       setStatistics(stats);
     } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/77ff5847-3690-4c03-a8f2-3e97efcf00cb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StatisticsPage.tsx:53',message:'loadStatistics error',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       console.error('Failed to load statistics:', error);
     }
   };
@@ -144,27 +162,32 @@ const StatisticsPage: React.FC = () => {
 
         <div className="card">
           <h2>⚠️ {t('top20WrongWords')}</h2>
-          {statistics.topWrongWords.length > 0 ? (
-            <div className="wrong-words-list">
-              {statistics.topWrongWords
-                .sort((a, b) => b.wrongCount - a.wrongCount)
-                .slice(0, 20)
-                .map((word, index) => (
-                  <div key={word.wordId} className="wrong-word-item">
-                    <div className="word-rank">#{index + 1}</div>
-                    <div className="word-text">{word.word}</div>
-                    <div className="word-stats">
-                      <span className="wrong-count">{word.wrongCount} {t('timesWrong')}</span>
-                      <span className="wrong-ratio">
-                        ({Math.round(word.ratio * 100)}% {t('errorRate')})
-                      </span>
+          {(() => {
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/77ff5847-3690-4c03-a8f2-3e97efcf00cb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'StatisticsPage.tsx:147',message:'render topWrongWords check',data:{topWrongWordsLength:statistics.topWrongWords?.length||0,topWrongWordsExists:!!statistics.topWrongWords,firstWordKeys:statistics.topWrongWords?.[0]?Object.keys(statistics.topWrongWords[0]):[],firstWord:statistics.topWrongWords?.[0]||null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B'})}).catch(()=>{});
+            // #endregion
+            return statistics.topWrongWords.length > 0 ? (
+              <div className="wrong-words-list">
+                {statistics.topWrongWords
+                  .sort((a, b) => b.wrongCount - a.wrongCount)
+                  .slice(0, 20)
+                  .map((word, index) => (
+                    <div key={word.wordId} className="wrong-word-item">
+                      <div className="word-rank">#{index + 1}</div>
+                      <div className="word-text">{word.word}</div>
+                      <div className="word-stats">
+                        <span className="wrong-count">{word.wrongCount} {t('timesWrong')}</span>
+                        <span className="wrong-ratio">
+                          ({Math.round(word.ratio * 100)}% {t('errorRate')})
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
-            </div>
-          ) : (
-            <p className="no-data">{t('noIncorrectWords')}</p>
-          )}
+                  ))}
+              </div>
+            ) : (
+              <p className="no-data">{t('noIncorrectWords')}</p>
+            );
+          })()}
         </div>
       </div>
     </div>
