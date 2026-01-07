@@ -325,12 +325,16 @@ class DatabaseService:
     
     def get_attempts_by_user(self, user_id: UUID, deck_id: Optional[UUID] = None) -> List[Dict]:
         """Get all attempts for a user."""
-        query = self.db.query(GameAttempt).join(GameSession).filter(GameSession.user_id == str(user_id))
+        # Use explicit join condition to avoid potential duplicates
+        query = self.db.query(GameAttempt).join(
+            GameSession, GameAttempt.session_id == GameSession.id
+        ).filter(GameSession.user_id == str(user_id))
         
         if deck_id:
             query = query.filter(GameSession.deck_id == str(deck_id))
         
-        attempts = query.all()
+        # Use distinct to ensure no duplicate attempts
+        attempts = query.distinct().all()
         return [
             {
                 "id": UUID(attempt.id),

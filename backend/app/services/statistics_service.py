@@ -58,18 +58,15 @@ class StatisticsService:
             for date_key, scores in sorted(scores_by_date_dict.items())
         ]
         
-        # Get top wrong words
-        attempts = self.db.get_attempts_by_user(stats_user_id, deck_id)
-        # #region agent log
-        import json
-        with open('/Users/kelvinchan/dev/test/cantonese-word-game/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({"location":"statistics_service.py:62","message":"get_statistics attempts retrieved","data":{"attempts_count":len(attempts),"deck_id":str(deck_id) if deck_id else None},"timestamp":int(__import__('time').time()*1000),"sessionId":"debug-session","runId":"run1","hypothesisId":"D,E"})+"\n")
-        # #endregion
+        # Get top wrong words - only from completed sessions to match other statistics
+        all_attempts = self.db.get_attempts_by_user(stats_user_id, deck_id)
+        # Filter to only include attempts from completed sessions
+        completed_session_ids = {str(session["id"]) for session in all_sessions}
+        attempts = [
+            attempt for attempt in all_attempts
+            if str(attempt["session_id"]) in completed_session_ids
+        ]
         top_wrong_words = self._calculate_wrong_words(attempts)
-        # #region agent log
-        with open('/Users/kelvinchan/dev/test/cantonese-word-game/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({"location":"statistics_service.py:64","message":"get_statistics top_wrong_words calculated","data":{"top_wrong_words_count":len(top_wrong_words),"first_word":dict(top_wrong_words[0]) if top_wrong_words else None},"timestamp":int(__import__('time').time()*1000),"sessionId":"debug-session","runId":"run1","hypothesisId":"A,B,D"})+"\n")
-        # #endregion
         
         return GameStatistics(
             totalGames=total_games,
@@ -135,11 +132,6 @@ class StatisticsService:
     
     def _calculate_wrong_words(self, attempts: List[dict]) -> List[WrongWord]:
         """Calculate wrong word statistics from attempts."""
-        # #region agent log
-        import json
-        with open('/Users/kelvinchan/dev/test/cantonese-word-game/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({"location":"statistics_service.py:127","message":"_calculate_wrong_words entry","data":{"attempts_count":len(attempts)},"timestamp":int(__import__('time').time()*1000),"sessionId":"debug-session","runId":"run1","hypothesisId":"D"})+"\n")
-        # #endregion
         word_stats = defaultdict(lambda: {"correct": 0, "incorrect": 0})
         
         for attempt in attempts:
@@ -159,24 +151,15 @@ class StatisticsService:
             wrong_count = stats["incorrect"]
             ratio = wrong_count / total_attempts if total_attempts > 0 else 0.0
             
-            wrong_word = WrongWord(
+            wrong_words.append(WrongWord(
                 wordId=word_id,
                 word=word["text"],
                 wrongCount=wrong_count,
                 totalAttempts=total_attempts,
                 ratio=ratio
-            )
-            # #region agent log
-            with open('/Users/kelvinchan/dev/test/cantonese-word-game/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"location":"statistics_service.py:154","message":"_calculate_wrong_words WrongWord created","data":{"word_id":str(word_id),"word":word["text"],"wrongCount":wrong_count,"ratio":ratio,"wrongWord_dict":wrong_word.model_dump()},"timestamp":int(__import__('time').time()*1000),"sessionId":"debug-session","runId":"run1","hypothesisId":"A"})+"\n")
-            # #endregion
-            wrong_words.append(wrong_word)
+            ))
         
         # Sort by error ratio (descending)
         wrong_words.sort(key=lambda x: x.ratio, reverse=True)
-        # #region agent log
-        with open('/Users/kelvinchan/dev/test/cantonese-word-game/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({"location":"statistics_service.py:158","message":"_calculate_wrong_words return","data":{"wrong_words_count":len(wrong_words),"first_word_dict":wrong_words[0].model_dump() if wrong_words else None},"timestamp":int(__import__('time').time()*1000),"sessionId":"debug-session","runId":"run1","hypothesisId":"A,B"})+"\n")
-        # #endregion
         return wrong_words
 

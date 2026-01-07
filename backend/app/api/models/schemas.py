@@ -90,10 +90,10 @@ class ScoreByDate(BaseModel):
 
 
 class WrongWord(BaseModel):
-    wordId: UUID = Field(alias="word_id")
+    wordId: UUID
     word: str
-    wrongCount: int = Field(alias="wrong_count")
-    totalAttempts: int = Field(alias="total_attempts")
+    wrongCount: int
+    totalAttempts: int
     ratio: float
     
     model_config = ConfigDict(populate_by_name=True)
