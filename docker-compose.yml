@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: cantonese-postgres
+    environment:
+      POSTGRES_USER: cantonese_user
+      POSTGRES_PASSWORD: cantonese_pass
+      POSTGRES_DB: cantonese_game
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cantonese_user -d cantonese_game"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cantonese-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cantonese-backend
+    environment:
+      DATABASE_URL: postgresql://cantonese_user:cantonese_pass@postgres:5432/cantonese_game
+      SECRET_KEY: dev-secret-key-change-in-production
+      CORS_ORIGINS: '["http://localhost:5173", "http://localhost:3000", "http://localhost:80"]'
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Mount source code for development (optional, comment out for production-like)
+      - ./backend:/app
+      - /app/.venv  # Exclude venv from mount
+    networks:
+      - cantonese-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cantonese-frontend
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000/api
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - cantonese-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  postgres_data:
+
+networks:
+  cantonese-network:
+    driver: bridge
+

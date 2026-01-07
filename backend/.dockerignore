@@ -1,0 +1,88 @@
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+dist
+build
+.eggs
+
+# Virtual environments
+.venv
+venv
+ENV
+env
+
+# Testing
+.pytest_cache
+.coverage
+htmlcov
+.tox
+.hypothesis
+*.cover
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+
+# Logs
+*.log
+logs
+
+# Alembic (keep migrations, exclude temp files)
+alembic/__pycache__
+alembic/versions/__pycache__
+
+# Misc
+.DS_Store
+.cache
+.temp
+tmp
+
+# Frontend (excluded from backend build)
+../src
+../dist
+../node_modules
+../package*.json
+../vite.config.ts
+../tsconfig*.json
+../index.html
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# CI/CD
+../.github
+
+# Infrastructure
+../infrastructure
+../scripts
+

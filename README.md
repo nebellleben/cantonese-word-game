@@ -448,9 +448,9 @@ uv run alembic downgrade -1
 
 ### 🔄 In Progress / Future Enhancements
 
-- [ ] Docker containerization
-- [ ] CI/CD pipeline (GitHub Actions)
-- [ ] Cloud deployment
+- [x] Docker containerization
+- [x] CI/CD pipeline (GitHub Actions)
+- [x] Cloud deployment (AWS ECS Fargate)
 - [ ] Enhanced ASR accuracy improvements
 - [ ] Additional statistics visualizations
 - [ ] Mobile app version
@@ -486,6 +486,202 @@ cantonese-word-game/
 4. **Speech recognition not working**: Ensure browser supports Web Speech API and microphone permissions are granted
 
 See `TROUBLESHOOTING.md` for more detailed troubleshooting information.
+
+## Docker Deployment
+
+### Local Development with Docker Compose
+
+The project includes Docker Compose configuration for local development:
+
+```bash
+# Start all services (frontend, backend, PostgreSQL)
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+
+# Stop and remove volumes
+docker-compose down -v
+```
+
+Services will be available at:
+- Frontend: http://localhost:80
+- Backend API: http://localhost:8000
+- PostgreSQL: localhost:5432
+
+### Building Docker Images
+
+```bash
+# Build frontend image
+docker build -t cantonese-word-game-frontend .
+
+# Build backend image
+docker build -t cantonese-word-game-backend -f backend/Dockerfile backend/
+```
+
+## AWS Deployment
+
+The application is configured for deployment to AWS using ECS Fargate, RDS PostgreSQL, and Application Load Balancer.
+
+### Architecture
+
+The deployment uses:
+- **ECS Fargate**: Serverless container hosting for frontend and backend
+- **RDS PostgreSQL**: Managed database service
+- **Application Load Balancer**: Traffic distribution and health checks
+- **ECR**: Container image registry
+- **CloudWatch**: Monitoring and logging
+- **Secrets Manager**: Secure secret storage
+
+### Prerequisites
+
+1. **AWS Account** with appropriate permissions
+2. **AWS CLI** configured: `aws configure`
+3. **AWS CDK CLI** installed: `npm install -g aws-cdk`
+4. **Docker** installed and running
+5. **Python 3.11+** for CDK infrastructure code
+
+### Initial AWS Setup
+
+1. **Bootstrap CDK** (first time only):
+```bash
+cd infrastructure/cdk
+cdk bootstrap
+```
+
+2. **Install CDK dependencies**:
+```bash
+pip install -r requirements.txt
+```
+
+3. **Deploy infrastructure**:
+```bash
+# Deploy all infrastructure
+cdk deploy
+
+# Or use the setup script
+cd ../..
+./scripts/setup-aws.sh
+```
+
+This creates:
+- VPC with public and private subnets
+- RDS PostgreSQL instance
+- ECS Fargate cluster
+- ECS services for frontend and backend
+- Application Load Balancer
+- ECR repositories
+- Security groups and IAM roles
+- CloudWatch log groups and dashboard
+- Secrets Manager secret
+
+### Configure Secrets
+
+After infrastructure deployment, update the Secrets Manager secret with:
+
+```bash
+aws secretsmanager put-secret-value \
+  --secret-id cantonese-word-game-secrets \
+  --secret-string '{
+    "SECRET_KEY": "your-generated-secret-key",
+    "DATABASE_URL": "postgresql://username:password@rds-endpoint:5432/cantonese_game",
+    "CORS_ORIGINS": "[\"https://your-domain.com\"]"
+  }'
+```
+
+Generate a secure SECRET_KEY:
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+### Deploy Application
+
+#### Option 1: Manual Deployment
+
+```bash
+# Build and push images, then update ECS services
+./scripts/deploy.sh
+```
+
+#### Option 2: GitHub Actions CI/CD
+
+1. **Configure GitHub Secrets**:
+   - `AWS_ACCESS_KEY_ID`: AWS access key
+   - `AWS_SECRET_ACCESS_KEY`: AWS secret key
+   - `AWS_ACCOUNT_ID`: Your AWS account ID
+
+2. **Push to main branch**:
+   - The CI/CD pipeline will automatically:
+     - Run tests
+     - Build Docker images
+     - Push to ECR
+     - Deploy to ECS
+
+### Accessing the Application
+
+After deployment, get the Load Balancer DNS:
+
+```bash
+aws elbv2 describe-load-balancers \
+  --query 'LoadBalancers[?LoadBalancerName==`cantonese-word-game-alb`].DNSName' \
+  --output text
+```
+
+- Frontend: `http://<alb-dns>`
+- Backend API: `http://<alb-dns>:8000/api`
+- API Docs: `http://<alb-dns>:8000/docs`
+
+### Monitoring
+
+Access the CloudWatch Dashboard:
+- Dashboard name: `CantoneseWordGame-Dashboard`
+- View in AWS Console: CloudWatch → Dashboards
+
+The dashboard includes:
+- ECS service CPU and memory utilization
+- RDS CPU and connections
+- ALB request count and response time
+- Target health status
+
+### Scaling
+
+Update ECS service desired count:
+
+```bash
+aws ecs update-service \
+  --cluster cantonese-word-game-cluster \
+  --service cantonese-word-game-backend-service \
+  --desired-count 3
+```
+
+Or configure auto-scaling in the CDK stack.
+
+### Cleanup
+
+To destroy all AWS resources:
+
+```bash
+cd infrastructure/cdk
+cdk destroy
+```
+
+**Warning**: This will delete all resources including the database. Ensure you have backups!
+
+## CI/CD Pipeline
+
+The project includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) that:
+
+1. **Tests**: Runs frontend and backend tests
+2. **Builds**: Creates Docker images
+3. **Pushes**: Uploads images to ECR
+4. **Deploys**: Updates ECS services
+
+The pipeline triggers on:
+- Push to `main` branch (full deployment)
+- Pull requests (tests only)
 
 ## Contributing
 
