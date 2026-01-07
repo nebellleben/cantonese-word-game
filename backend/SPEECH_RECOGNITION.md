@@ -2,27 +2,28 @@
 
 ## Current Status
 
-The speech recognition engine now uses **OpenAI Whisper** for Cantonese speech recognition.
+The speech recognition engine now uses **HuggingFace Whisper** fine-tuned for Cantonese speech recognition.
 
-## ASR Model: OpenAI Whisper
+## ASR Model: HuggingFace Whisper
 
-- **Model**: Whisper `base` model
-- **Language Support**: Multilingual, including Cantonese (detected automatically)
-- **Accuracy**: High accuracy for Cantonese speech recognition
-- **Output**: Chinese characters (Cantonese), then converted to Jyutping
+- **Model**: `alvanlii/whisper-small-cantonese` (HuggingFace)
+- **Architecture**: Whisper Small, fine-tuned specifically for Cantonese
+- **Accuracy**: Character Error Rate (CER) of 7.93 on Common Voice 16.0
+- **Output**: Chinese characters (Cantonese)
 
 ## How It Works
 
 1. **Audio Input**: User records pronunciation (WAV format)
 2. **Whisper Transcription**: 
-   - Audio is transcribed to Chinese characters (Cantonese)
-   - Language is set to 'zh' (Chinese) which includes Cantonese
-3. **Jyutping Conversion**: 
-   - Chinese text is converted to Jyutping using `pycantonese`
-   - This allows comparison with expected pronunciation
-4. **Comparison**: 
-   - Recognized jyutping is compared with expected jyutping
+   - Audio is loaded from bytes and resampled to 16kHz
+   - Processed with WhisperProcessor and transcribed using the Cantonese-optimized model
+   - Model is specifically fine-tuned for Cantonese, providing better accuracy than general-purpose models
+3. **Comparison**: 
+   - Recognized Chinese characters are compared directly with expected Chinese characters
    - Returns match result and detailed feedback
+4. **Display**: 
+   - Jyutping is only used for display purposes after evaluation
+   - Shows the correct pronunciation in jyutping format to help users learn
 
 ## Installation
 
@@ -34,52 +35,51 @@ uv sync
 ```
 
 This will install:
-- `openai-whisper`: The Whisper ASR model
-- `torch`: PyTorch (required by Whisper)
-- `numpy`: Numerical operations
+- `transformers`: HuggingFace transformers library for Whisper models
+- `torch`: PyTorch (required by transformers)
+- `librosa`: Audio processing library for loading and resampling audio
+- `numpy`: Numerical operations (required by librosa)
 
 ## Model Loading
 
-On first use, Whisper will download the model (~150MB for base model).
-The model is cached for subsequent uses.
+On first use, the model will be downloaded from HuggingFace (~500MB for small model).
+The model is cached in `~/.cache/huggingface/hub/` for subsequent uses.
 
 ## Fallback Behavior
 
 If Whisper is not available or fails to load:
 - The system falls back to a mock implementation
-- Mock randomly selects from a list of jyutping values
+- Mock randomly selects from a list of Chinese character strings
 - This allows development/testing without ASR dependencies
 
 ## Performance
 
-- **Model Size**: ~150MB (base model)
+- **Model Size**: ~500MB (small model)
 - **Speed**: ~1-2 seconds per transcription (on CPU)
-- **Accuracy**: High for Cantonese speech
+- **Accuracy**: Character Error Rate (CER) of 7.93 on Common Voice 16.0, optimized specifically for Cantonese
 
 ## Alternative Models
 
 If you need better accuracy or different characteristics:
 
-1. **Whisper Models** (in order of accuracy/speed):
-   - `tiny`: Fastest, least accurate
-   - `base`: Good balance (current)
-   - `small`: Better accuracy
-   - `medium`: High accuracy
-   - `large`: Best accuracy, slowest
-
+1. **Other Cantonese Whisper Models on HuggingFace**:
+   - `alvanlii/distil-whisper-small-cantonese`: Distilled version, faster but slightly less accurate
+   - `khleeloo/whisper-large-v3-cantonese`: Large model with better accuracy (larger size)
+   
    Change in `speech_recognition_engine.py`:
    ```python
-   self.model = whisper.load_model("small")  # or "medium", "large"
+   self.processor = WhisperProcessor.from_pretrained("khleeloo/whisper-large-v3-cantonese")
+   self.model = WhisperForConditionalGeneration.from_pretrained("khleeloo/whisper-large-v3-cantonese")
    ```
 
 2. **Other Options**:
    - Google Cloud Speech-to-Text API
    - Azure Speech Services
-   - Wav2Vec 2.0 (requires custom training)
+   - Wav2Vec 2.0 Cantonese models (e.g., `alvanlii/wav2vec2-BERT-cantonese`)
 
 ## Troubleshooting
 
-### Whisper not loading?
+### Transformers not loading?
 
 1. Check if dependencies are installed:
    ```bash
@@ -92,22 +92,29 @@ If you need better accuracy or different characteristics:
    uv run python -c "import torch; print(torch.__version__)"
    ```
 
-3. Check if Whisper is available:
+3. Check if transformers is available:
    ```bash
-   uv run python -c "import whisper; print('Whisper OK')"
+   uv run python -c "from transformers import WhisperProcessor; print('transformers OK')"
+   ```
+
+4. Check if librosa is available:
+   ```bash
+   uv run python -c "import librosa; print('librosa OK')"
    ```
 
 ### Model download issues?
 
-- First run will download the model (~150MB)
+- First run will download the model (~500MB)
 - Ensure internet connection is available
-- Model is cached in `~/.cache/whisper/`
+- Model is cached in `~/.cache/huggingface/hub/`
+- If download fails, you can manually download from HuggingFace and place in cache directory
 
 ### Low accuracy?
 
-- Try a larger model (`small`, `medium`, or `large`)
-- Ensure audio quality is good
+- Ensure audio quality is good (clear recording, minimal background noise)
 - Check that audio format is WAV and properly encoded
+- Verify audio is being resampled to 16kHz correctly
+- Consider using a larger model if needed
 
 ## Testing
 
@@ -119,13 +126,15 @@ uv run python -c "
 from app.engines.speech_recognition_engine import speech_recognition_engine
 print('Using Whisper:', speech_recognition_engine.use_whisper)
 print('Model loaded:', speech_recognition_engine.model is not None)
+print('Processor loaded:', speech_recognition_engine.processor is not None)
 "
 ```
 
 ## Notes
 
-- Whisper supports Cantonese natively
-- The model automatically detects Cantonese vs Mandarin
-- Output is in Chinese characters, which we convert to Jyutping
-- For production, consider using a larger model or fine-tuning
+- The model is specifically fine-tuned for Cantonese, providing better accuracy than general-purpose Whisper models
+- No language detection needed - the model is optimized for Cantonese
+- Output is in Chinese characters, which are compared directly with expected Chinese characters
+- Jyutping is only used for display purposes to show the correct pronunciation after evaluation
+- The model achieves a Character Error Rate (CER) of 7.93 on Common Voice 16.0, demonstrating strong Cantonese recognition capabilities
 

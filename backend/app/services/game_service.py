@@ -130,7 +130,7 @@ class GameService:
             raise ValueError("Word not found")
         
         # Evaluate pronunciation
-        is_correct, feedback, recognized_jyutping = speech_recognition_engine.evaluate_pronunciation(
+        is_correct, feedback, recognized_text = speech_recognition_engine.evaluate_pronunciation(
             audio_data or b"",
             word["text"],
             word["jyutping"]
@@ -142,7 +142,7 @@ class GameService:
                 "word_id": str(word_id),
                 "is_correct": is_correct,
                 "feedback": feedback,
-                "recognized_jyutping": recognized_jyutping,
+                "recognized_text": recognized_text,
             },
             "game_service.py:submit_pronunciation:5",
             "GAME-E",
@@ -151,8 +151,8 @@ class GameService:
         # Record attempt
         self.db.create_game_attempt(session_id, word_id, is_correct, response_time)
         
-        # Return result with recognized text for debugging/comparison
-        return is_correct, feedback or "", recognized_jyutping, word["text"], word["jyutping"]
+        # Return result with recognized text (Chinese characters) for debugging/comparison
+        return is_correct, feedback or "", recognized_text, word["text"], word["jyutping"]
     
     def end_game(self, session_id: UUID) -> GameSession:
         """End a game session and calculate score."""

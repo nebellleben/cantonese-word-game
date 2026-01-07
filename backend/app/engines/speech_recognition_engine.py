@@ -1,21 +1,23 @@
 """
 Speech Recognition Engine
 Evaluates if user's pronunciation matches the expected Cantonese word.
-Uses OpenAI Whisper for Cantonese speech recognition.
+Uses HuggingFace Whisper model fine-tuned for Cantonese speech recognition.
 """
 from typing import Optional, Tuple
 import io
 import random
-import tempfile
-import os
+import re
+import torch
+import librosa
 
-# Try to import faster-whisper (compatible with Python 3.14), fall back to mock if not available
+# Try to import transformers, fall back to mock if not available
 try:
-    from faster_whisper import WhisperModel
-    FASTER_WHISPER_AVAILABLE = True
+    from transformers import WhisperProcessor, WhisperForConditionalGeneration
+    TRANSFORMERS_AVAILABLE = True
 except ImportError:
-    FASTER_WHISPER_AVAILABLE = False
-    WhisperModel = None
+    TRANSFORMERS_AVAILABLE = False
+    WhisperProcessor = None
+    WhisperForConditionalGeneration = None
 
 
 class SpeechRecognitionEngine:
@@ -23,6 +25,7 @@ class SpeechRecognitionEngine:
     
     def __init__(self):
         """Initialize the speech recognition engine."""
+        self.processor = None
         self.model = None
         self.use_whisper = False
         self._model_loading = False
@@ -30,30 +33,32 @@ class SpeechRecognitionEngine:
         
         # Don't load model during initialization - load lazily on first use
         # This prevents blocking server startup
-        if not FASTER_WHISPER_AVAILABLE:
-            print("Warning: faster-whisper not installed. Using mock implementation.")
-            print("Install with: uv add faster-whisper")
+        if not TRANSFORMERS_AVAILABLE:
+            print("Warning: transformers not installed. Using mock implementation.")
+            print("Install with: uv add transformers torch librosa")
     
     def _ensure_model_loaded(self):
         """Lazily load the model on first use."""
         if self._model_loaded or self._model_loading:
             return
         
-        if not FASTER_WHISPER_AVAILABLE:
+        if not TRANSFORMERS_AVAILABLE:
             return
         
         self._model_loading = True
         try:
-            # Load faster-whisper model (base model is good balance of speed/accuracy)
-            # For Cantonese, we use 'base' model which supports multilingual including Cantonese
-            # faster-whisper is compatible with Python 3.14 and faster than openai-whisper
-            print("Loading faster-whisper ASR model for Cantonese...")
-            self.model = WhisperModel("base", device="cpu", compute_type="int8")
+            # Load HuggingFace Whisper model fine-tuned for Cantonese
+            # Model: alvanlii/whisper-small-cantonese
+            # This model is specifically optimized for Cantonese speech recognition
+            print("Loading HuggingFace Whisper ASR model for Cantonese...")
+            self.processor = WhisperProcessor.from_pretrained("alvanlii/whisper-small-cantonese")
+            self.model = WhisperForConditionalGeneration.from_pretrained("alvanlii/whisper-small-cantonese")
+            self.model.eval()  # Set to evaluation mode
             self.use_whisper = True
             self._model_loaded = True
-            print("faster-whisper model loaded successfully!")
+            print("HuggingFace Whisper model loaded successfully!")
         except Exception as e:
-            print(f"Warning: Failed to load faster-whisper model: {e}")
+            print(f"Warning: Failed to load HuggingFace Whisper model: {e}")
             print("Falling back to mock implementation")
             self.use_whisper = False
             self._model_loaded = True  # Mark as loaded even if failed to prevent retries
@@ -62,101 +67,77 @@ class SpeechRecognitionEngine:
     
     def _transcribe_audio(self, audio_data: bytes) -> str:
         """
-        Transcribe audio to text using faster-whisper ASR model.
+        Transcribe audio to text using HuggingFace Whisper ASR model.
         
         Returns:
-            Recognized text in Chinese characters (Cantonese), then converted to jyutping
+            Recognized text in Chinese characters (Cantonese)
         """
         # Load model lazily on first use
-        if FASTER_WHISPER_AVAILABLE and not self._model_loaded:
+        if TRANSFORMERS_AVAILABLE and not self._model_loaded:
             self._ensure_model_loaded()
         
-        if self.use_whisper and self.model:
+        if self.use_whisper and self.model and self.processor:
             try:
-                # Save audio data to temporary file
-                with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp_file:
-                    tmp_file.write(audio_data)
-                    tmp_file_path = tmp_file.name
+                # Load audio from bytes using librosa
+                # librosa automatically resamples to 16kHz (required by Whisper)
+                audio_array, sampling_rate = librosa.load(io.BytesIO(audio_data), sr=16000)
                 
-                try:
-                    # Transcribe with faster-whisper
-                    # Language is set to 'zh' (Chinese) which includes Cantonese
-                    # faster-whisper will detect Cantonese automatically
-                    segments, info = self.model.transcribe(
-                        tmp_file_path,
-                        language='zh',  # Chinese (includes Cantonese)
-                        task='transcribe',
-                        beam_size=5
-                    )
-                    
-                    # Extract the transcribed text from segments
-                    recognized_text = "".join([segment.text for segment in segments]).strip()
-                    
-                    # Convert Chinese text to jyutping using pycantonese
-                    # This is a two-step process: ASR gives us Chinese characters,
-                    # then we convert to jyutping for comparison
-                    try:
-                        import pycantonese
-                        jyutping = pycantonese.characters_to_jyutping(recognized_text)
-                        if jyutping:
-                            # Join jyutping syllables with spaces
-                            return " ".join(jyutping)
-                        else:
-                            # If conversion fails, return the Chinese text
-                            # (comparison will need to handle this)
-                            return recognized_text
-                    except Exception as e:
-                        print(f"Warning: Failed to convert to jyutping: {e}")
-                        # Return Chinese text if jyutping conversion fails
-                        return recognized_text
-                        
-                finally:
-                    # Clean up temporary file
-                    if os.path.exists(tmp_file_path):
-                        os.unlink(tmp_file_path)
+                # Process audio with WhisperProcessor
+                input_features = self.processor(audio_array, sampling_rate=sampling_rate, return_tensors="pt").input_features
+                
+                # Generate transcription
+                with torch.no_grad():
+                    predicted_ids = self.model.generate(input_features)
+                
+                # Decode transcription
+                transcription = self.processor.batch_decode(predicted_ids, skip_special_tokens=True)[0]
+                
+                # Return Chinese characters directly for comparison
+                return transcription.strip()
                         
             except Exception as e:
-                print(f"Error in faster-whisper transcription: {e}")
-                # Fall back to mock if faster-whisper fails
+                print(f"Error in HuggingFace Whisper transcription: {e}")
+                # Fall back to mock if transcription fails
                 return self._mock_transcribe()
         else:
-            # Use mock implementation if faster-whisper is not available
+            # Use mock implementation if transformers is not available
             return self._mock_transcribe()
     
     def _mock_transcribe(self) -> str:
         """
-        Mock transcription for testing when faster-whisper is not available.
+        Mock transcription for testing when transformers is not available.
+        Returns Chinese characters for testing purposes.
         """
-        mock_jyutpings = [
-            "nei5 hou2",  # Correct for 你好
-            "ze6 ze6",    # Correct for 謝謝
-            "zoi3 gin3",  # Correct for 再見
-            "zou2 san4",  # Correct for 早晨
-            "maan5 on1",  # Correct for 晚安
-            "nei5 hou3",  # Slight variation (wrong tone)
-            "ze6 ze5",    # Slight variation
-            "zoi2 gin3",  # Slight variation
+        mock_texts = [
+            "你好",   # Correct
+            "謝謝",   # Correct
+            "再見",   # Correct
+            "早晨",   # Correct
+            "晚安",   # Correct
+            "你好嗎",  # Variation
+            "多謝",   # Variation
+            "再會",   # Variation
         ]
-        return random.choice(mock_jyutpings)
+        return random.choice(mock_texts)
     
     def _compare_pronunciation(
         self,
-        recognized_jyutping: str,
-        expected_jyutping: str
+        recognized_text: str,
+        expected_text: str
     ) -> bool:
         """
-        Compare recognized pronunciation with expected pronunciation.
+        Compare recognized Chinese characters with expected Chinese characters.
         
         Args:
-            recognized_jyutping: The jyutping recognized from audio
-            expected_jyutping: The expected jyutping for the word
+            recognized_text: The Chinese characters recognized from audio
+            expected_text: The expected Chinese characters for the word
             
         Returns:
-            True if pronunciations match (with some tolerance)
+            True if the Chinese characters match
         """
-        # Normalize both jyutpings for comparison
-        recognized = recognized_jyutping.strip().lower()
-        expected = expected_jyutping.strip().lower()
+        # Normalize whitespace for comparison
+        recognized = re.sub(r'\s+', '', recognized_text.strip())
+        expected = re.sub(r'\s+', '', expected_text.strip())
         
         # Exact match
         if recognized == expected:
@@ -164,24 +145,32 @@ class SpeechRecognitionEngine:
         
         # For now, we'll do exact matching
         # In production, you might want to:
-        # - Handle tone variations (some tolerance)
-        # - Handle similar sounds
-        # - Use phonetic distance metrics
+        # - Handle character variations
+        # - Handle traditional vs simplified characters
+        # - Use fuzzy matching for similar characters
         
         return False
     
     def _generate_feedback(
         self,
         is_correct: bool,
-        recognized_jyutping: str,
-        expected_jyutping: str,
-        expected_text: str
+        recognized_text: str,
+        expected_text: str,
+        expected_jyutping: str
     ) -> str:
-        """Generate feedback message for the user."""
+        """
+        Generate feedback message for the user.
+        
+        Args:
+            is_correct: Whether the pronunciation matches
+            recognized_text: The Chinese characters recognized from audio
+            expected_text: The expected Chinese characters
+            expected_jyutping: The expected jyutping (for display purposes only)
+        """
         if is_correct:
             return f"Correct! You pronounced '{expected_text}' correctly."
         else:
-            return f"Expected: {expected_jyutping} for '{expected_text}', but recognized: {recognized_jyutping}"
+            return f"Expected: '{expected_text}' ({expected_jyutping}), but recognized: '{recognized_text}'"
     
     def evaluate_pronunciation(
         self,
@@ -195,31 +184,32 @@ class SpeechRecognitionEngine:
         Args:
             audio_data: Audio file bytes (WAV format)
             expected_text: Expected Chinese text
-            expected_jyutping: Expected Jyutping transliteration
+            expected_jyutping: Expected Jyutping transliteration (for display purposes only)
             
         Returns:
-            Tuple of (is_correct: bool, feedback: Optional[str], recognized_jyutping: Optional[str])
+            Tuple of (is_correct: bool, feedback: Optional[str], recognized_text: Optional[str])
+            where recognized_text is Chinese characters
         """
         try:
-            # Transcribe audio to jyutping
+            # Transcribe audio to Chinese characters
             if audio_data and len(audio_data) > 0:
-                recognized_jyutping = self._transcribe_audio(audio_data)
+                recognized_text = self._transcribe_audio(audio_data)
             else:
                 # No audio provided - for testing, we'll use a mock
-                recognized_jyutping = self._transcribe_audio(b"mock")
+                recognized_text = self._transcribe_audio(b"mock")
             
-            # Compare with expected
-            is_correct = self._compare_pronunciation(recognized_jyutping, expected_jyutping)
+            # Compare with expected Chinese characters
+            is_correct = self._compare_pronunciation(recognized_text, expected_text)
             
-            # Generate feedback
+            # Generate feedback (jyutping is included for display purposes)
             feedback = self._generate_feedback(
                 is_correct,
-                recognized_jyutping,
-                expected_jyutping,
-                expected_text
+                recognized_text,
+                expected_text,
+                expected_jyutping
             )
             
-            return is_correct, feedback, recognized_jyutping
+            return is_correct, feedback, recognized_text
             
         except Exception as e:
             # Error in processing
