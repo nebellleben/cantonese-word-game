@@ -364,18 +364,16 @@ class DatabaseService:
     
     # Student-Teacher association operations
     def create_association(self, student_id: UUID, teacher_id: UUID):
-        """Create student-teacher association."""
-        # Check if association already exists
-        existing = self.db.query(StudentTeacherAssociation).filter(
-            and_(
-                StudentTeacherAssociation.student_id == str(student_id),
-                StudentTeacherAssociation.teacher_id == str(teacher_id)
-            )
-        ).first()
-        
-        if existing:
-            return
-        
+        """Create or update a student-teacher association.
+
+        There should be at most one teacher per student, so we first remove any
+        existing associations for this student, then create the new one.
+        """
+        # Remove existing associations for this student
+        self.db.query(StudentTeacherAssociation).filter(
+            StudentTeacherAssociation.student_id == str(student_id)
+        ).delete(synchronize_session=False)
+
         association = StudentTeacherAssociation(
             student_id=str(student_id),
             teacher_id=str(teacher_id),
@@ -417,6 +415,17 @@ class DatabaseService:
                 "created_at": user.created_at,
             }
             for user in users
+        ]
+    
+    def get_all_associations(self) -> List[Dict]:
+        """Get all student-teacher associations."""
+        associations = self.db.query(StudentTeacherAssociation).all()
+        return [
+            {
+                "student_id": UUID(assoc.student_id),
+                "teacher_id": UUID(assoc.teacher_id),
+            }
+            for assoc in associations
         ]
     
     # User streak operations

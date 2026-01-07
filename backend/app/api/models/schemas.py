@@ -145,6 +145,11 @@ class AssociationRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
+class Association(BaseModel):
+    studentId: UUID
+    teacherId: UUID
+
+
 class ResetPasswordRequest(BaseModel):
     password: str
 

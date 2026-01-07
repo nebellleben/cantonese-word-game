@@ -13,6 +13,7 @@ import type {
   StartGameRequest,
   SubmitPronunciationRequest,
   PronunciationResponse,
+  StudentTeacherAssociation,
 } from '../types';
 
 // Get API base URL from environment variable or use default
@@ -190,6 +191,11 @@ class ApiClient {
 
   async associateStudentTeacher(studentId: string, teacherId: string): Promise<void> {
     await this.client.post('/admin/associations', { studentId, teacherId });
+  }
+
+  async getAssociations(): Promise<StudentTeacherAssociation[]> {
+    const response = await this.client.get<StudentTeacherAssociation[]>('/admin/associations');
+    return response.data;
   }
 
   async resetPassword(userId: string, password: string): Promise<void> {

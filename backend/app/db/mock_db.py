@@ -253,16 +253,20 @@ class MockDatabase:
     # Student-Teacher association operations
     def create_association(self, student_id: UUID, teacher_id: UUID):
         """Create student-teacher association."""
-        # Check if association already exists
-        for assoc in self.student_teacher_associations:
-            if assoc["student_id"] == student_id and assoc["teacher_id"] == teacher_id:
-                return
-        
-        self.student_teacher_associations.append({
-            "student_id": student_id,
-            "teacher_id": teacher_id,
-            "created_at": datetime.utcnow(),
-        })
+        # Ensure a student is associated with at most one teacher:
+        # remove any existing associations for this student, then add the new one.
+        self.student_teacher_associations = [
+            assoc for assoc in self.student_teacher_associations
+            if assoc["student_id"] != student_id
+        ]
+
+        self.student_teacher_associations.append(
+            {
+                "student_id": student_id,
+                "teacher_id": teacher_id,
+                "created_at": datetime.utcnow(),
+            }
+        )
     
     def get_students_by_teacher(self, teacher_id: UUID) -> List[UUID]:
         """Get all student IDs associated with a teacher."""

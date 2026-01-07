@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from uuid import UUID
+from typing import List
 from app.api.models.schemas import (
     Deck, Word, CreateDeckRequest, CreateWordRequest,
-    AssociationRequest, ResetPasswordRequest
+    AssociationRequest, Association, ResetPasswordRequest
 )
 from app.core.dependencies import get_current_admin, get_db_service
 from app.db.database_service import DatabaseService
@@ -124,6 +125,19 @@ async def create_association(
         )
     
     db_service.create_association(request.studentId, request.teacherId)
+
+
+@router.get("/associations", response_model=List[Association], status_code=status.HTTP_200_OK)
+async def list_associations(
+    current_user: dict = Depends(get_current_admin),
+    db_service: DatabaseService = Depends(get_db_service)
+):
+    """List all student-teacher associations (admin only)."""
+    associations = db_service.get_all_associations()
+    return [
+        Association(studentId=a["student_id"], teacherId=a["teacher_id"])
+        for a in associations
+    ]
 
 
 @router.post("/users/{user_id}/reset-password", status_code=status.HTTP_204_NO_CONTENT)

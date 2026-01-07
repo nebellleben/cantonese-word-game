@@ -36,6 +36,11 @@ export interface Deck {
   wordCount: number;
 }
 
+export interface StudentTeacherAssociation {
+  studentId: string;
+  teacherId: string;
+}
+
 export interface GameSession {
   id: string;
   userId: string;

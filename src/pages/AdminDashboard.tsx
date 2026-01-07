@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { apiClient } from '../services/api';
-import type { Deck, Word, Student, GameStatistics, User } from '../types';
+import type { Deck, Word, Student, GameStatistics, User, StudentTeacherAssociation } from '../types';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import './AdminDashboard.css';
 
@@ -26,6 +26,7 @@ const AdminDashboard: React.FC = () => {
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
   const [teachers, setTeachers] = useState<User[]>([]);
+  const [associations, setAssociations] = useState<StudentTeacherAssociation[]>([]);
   
   // Statistics state
   const [selectedStudentForStats, setSelectedStudentForStats] = useState<string>('');
@@ -73,16 +74,17 @@ const AdminDashboard: React.FC = () => {
 
   const loadInitialData = async () => {
     try {
-      // Only load essential data upfront - decks and students
-      // Statistics and teachers can be loaded on-demand
-      const [deckList, studentList, teacherList] = await Promise.all([
+      // Only load essential data upfront - decks, students, teachers, associations
+      const [deckList, studentList, teacherList, associationList] = await Promise.all([
         apiClient.getDecks(),
         apiClient.getStudents(),
         apiClient.getTeachers(),
+        apiClient.getAssociations(),
       ]);
       setDecks(deckList);
       setStudents(studentList);
       setTeachers(teacherList);
+      setAssociations(associationList);
       
       if (studentList.length > 0) {
         setSelectedStudentForStats(studentList[0].id);
@@ -199,6 +201,10 @@ const AdminDashboard: React.FC = () => {
 
     try {
       await apiClient.associateStudentTeacher(selectedStudentId, selectedTeacherId);
+      setAssociations((prev) => {
+        const withoutStudent = prev.filter((a) => a.studentId !== selectedStudentId);
+        return [...withoutStudent, { studentId: selectedStudentId, teacherId: selectedTeacherId }];
+      });
       showMessage('success', 'Student associated with teacher successfully');
     } catch (error) {
       showMessage('error', 'Failed to associate student with teacher');
@@ -233,6 +239,14 @@ const AdminDashboard: React.FC = () => {
   if (loading) {
     return <div className="loading">{t('loading')}</div>;
   }
+
+  const getStudentLabel = (student: Student): string => {
+    const assoc = associations.find((a) => a.studentId === student.id);
+    if (!assoc) return student.username;
+    const teacher = teachers.find((t) => t.id === assoc.teacherId);
+    if (!teacher) return student.username;
+    return `${student.username} (${teacher.username})`;
+  };
 
   // All users for password management (students and teachers)
   const allUsers: User[] = [
@@ -402,7 +416,7 @@ const AdminDashboard: React.FC = () => {
               >
                 {students.map((student) => (
                   <option key={student.id} value={student.id}>
-                    {student.username}
+                    {getStudentLabel(student)}
                   </option>
                 ))}
               </select>
