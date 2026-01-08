@@ -14,10 +14,10 @@ RUN pip install --no-cache-dir uv
 WORKDIR /app
 
 # Copy dependency files
-COPY pyproject.toml ./
+COPY pyproject.toml uv.lock* ./
 
 # Install dependencies using uv
-RUN uv sync --frozen
+RUN uv sync --frozen || uv sync
 
 # Production stage
 FROM python:3.11-slim

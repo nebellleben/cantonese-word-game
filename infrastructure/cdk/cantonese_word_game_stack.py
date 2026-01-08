@@ -28,11 +28,11 @@ class CantoneseWordGameStack(Stack):
         # Configuration
         vpc_cidr = self.node.try_get_context("vpc_cidr") or "10.0.0.0/16"
         db_instance_type = self.node.try_get_context("db_instance_type") or "db.t3.micro"
-        frontend_cpu = self.node.try_get_context("frontend_cpu") or "256"
-        frontend_memory = self.node.try_get_context("frontend_memory") or "512"
-        backend_cpu = self.node.try_get_context("backend_cpu") or "512"
-        backend_memory = self.node.try_get_context("backend_memory") or "1024"
-        desired_count = self.node.try_get_context("desired_count") or 2
+        frontend_cpu = int(self.node.try_get_context("frontend_cpu") or "256")
+        frontend_memory = int(self.node.try_get_context("frontend_memory") or "512")
+        backend_cpu = int(self.node.try_get_context("backend_cpu") or "512")
+        backend_memory = int(self.node.try_get_context("backend_memory") or "1024")
+        desired_count = int(self.node.try_get_context("desired_count") or 2)
 
         # Create VPC
         vpc = ec2.Vpc(
@@ -55,33 +55,17 @@ class CantoneseWordGameStack(Stack):
             ],
         )
 
-        # Create ECR Repositories
-        frontend_repo = ecr.Repository(
+        # Use existing ECR Repositories (they were created manually)
+        frontend_repo = ecr.Repository.from_repository_name(
             self,
             "FrontendRepository",
             repository_name="cantonese-word-game-frontend",
-            image_scan_on_push=True,
-            lifecycle_rules=[
-                ecr.LifecycleRule(
-                    rule_priority=1,
-                    description="Keep last 10 images",
-                    max_image_count=10,
-                )
-            ],
         )
 
-        backend_repo = ecr.Repository(
+        backend_repo = ecr.Repository.from_repository_name(
             self,
             "BackendRepository",
             repository_name="cantonese-word-game-backend",
-            image_scan_on_push=True,
-            lifecycle_rules=[
-                ecr.LifecycleRule(
-                    rule_priority=1,
-                    description="Keep last 10 images",
-                    max_image_count=10,
-                )
-            ],
         )
 
         # Create Secrets Manager secret for application secrets
@@ -137,7 +121,7 @@ class CantoneseWordGameStack(Stack):
             ),
             allocated_storage=20,
             max_allocated_storage=100,
-            backup_retention=Duration.days(7),
+            backup_retention=Duration.days(1),  # Reduced for free tier compatibility
             deletion_protection=False,
             removal_policy=RemovalPolicy.DESTROY,  # Change to RETAIN for production
             multi_az=False,  # Set to True for production

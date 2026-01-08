@@ -1,0 +1,21 @@
+{
+  "version": "48.0.0",
+  "files": {
+    "2311b6b3c04644075c6d7ebc7f788ce2aa987065a3c6543e10118ce4af6cc2a8": {
+      "displayName": "CantoneseWordGameStack Template",
+      "source": {
+        "path": "CantoneseWordGameStack.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "current_account-us-east-1-4c78abf8": {
+          "bucketName": "cdk-hnb659fds-assets-${AWS::AccountId}-us-east-1",
+          "objectKey": "2311b6b3c04644075c6d7ebc7f788ce2aa987065a3c6543e10118ce4af6cc2a8.json",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-file-publishing-role-${AWS::AccountId}-us-east-1"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

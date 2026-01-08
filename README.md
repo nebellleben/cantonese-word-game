@@ -604,6 +604,9 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 ```bash
 # Build and push images, then update ECS services
 ./scripts/deploy.sh
+
+# Or run the one-shot helper that builds, pushes and updates ECS:
+./DEPLOY_NOW.sh
 ```
 
 #### Option 2: GitHub Actions CI/CD
