@@ -110,6 +110,13 @@ The application supports three distinct user roles, each with tailored functiona
 - **pytest**: Backend testing framework
 - **ESLint**: Code linting for TypeScript/React
 
+## Documentation Map
+
+- **Implementation & Technical Details**: see `IMPLEMENTATION.md`
+- **Docker, CI/CD & Cloud Deployment**: see `DEPLOYMENT.md`
+- **Quick Start & Operational Guide**: see `QUICK_START.md`
+- **Project Requirements**: see `project_requirements.md`
+
 ## System Architecture
 
 ### Architecture Overview
@@ -603,9 +610,6 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 
 ```bash
 # Build and push images, then update ECS services
-./scripts/deploy.sh
-
-# Or run the one-shot helper that builds, pushes and updates ECS:
 ./DEPLOY_NOW.sh
 ```
 
@@ -690,8 +694,8 @@ The pipeline triggers on:
 
 This is a capstone project for the AI Development Tools Zoomcamp. For questions or issues, please refer to the project documentation files:
 
-- `BACKEND.md` - Backend requirements and specifications
-- `FRONTEND.md` - Frontend implementation details
+- `IMPLEMENTATION.md` - Frontend and backend implementation details and technical specifications
+- `DEPLOYMENT.md` - Dockerization, CI/CD pipeline, and cloud deployment details
 - `project_requirements.md` - Complete project requirements
 - `ASR_FIX.md` - Speech recognition fixes and improvements
 
