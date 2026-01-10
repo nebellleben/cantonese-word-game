@@ -18,7 +18,7 @@
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-us-east-1",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-cfn-exec-role-${AWS::AccountId}-us-east-1",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-us-east-1/2311b6b3c04644075c6d7ebc7f788ce2aa987065a3c6543e10118ce4af6cc2a8.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-us-east-1/fe3c541c7d46784b15827d8b69265885249d9cc1cc0c81029ffbb5488f80403d.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
@@ -339,16 +339,16 @@
             "type": "aws:cdk:warning",
             "data": "minHealthyPercent has not been configured so the default value of 50% is used. The number of running tasks will decrease below the desired count during deployments etc. See https://github.com/aws/aws-cdk/issues/31705 [ack: @aws-cdk/aws-ecs:minHealthyPercent]",
             "trace": [
-              "Annotations.addMessage (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-TBUNkq/node_modules/aws-cdk-lib/core/lib/annotations.js:1:2066)",
-              "Annotations.addWarningV2 (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-TBUNkq/node_modules/aws-cdk-lib/core/lib/annotations.js:1:984)",
-              "new BaseService (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-TBUNkq/node_modules/aws-cdk-lib/aws-ecs/lib/base/base-service.js:1:8675)",
-              "new FargateService2 (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-TBUNkq/node_modules/aws-cdk-lib/aws-ecs/lib/fargate/fargate-service.js:1:6318)",
-              "new FargateService2 (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-TBUNkq/node_modules/aws-cdk-lib/core/lib/prop-injectable.js:1:681)",
-              "Kernel._Kernel_create (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpb51s2m8t/lib/program.js:549:25)",
-              "Kernel.create (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpb51s2m8t/lib/program.js:219:93)",
-              "KernelHost.processRequest (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpb51s2m8t/lib/program.js:15482:36)",
-              "KernelHost.run (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpb51s2m8t/lib/program.js:15442:22)",
-              "Immediate._onImmediate (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpb51s2m8t/lib/program.js:15443:45)",
+              "Annotations.addMessage (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-HCYEcm/node_modules/aws-cdk-lib/core/lib/annotations.js:1:2066)",
+              "Annotations.addWarningV2 (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-HCYEcm/node_modules/aws-cdk-lib/core/lib/annotations.js:1:984)",
+              "new BaseService (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-HCYEcm/node_modules/aws-cdk-lib/aws-ecs/lib/base/base-service.js:1:8675)",
+              "new FargateService2 (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-HCYEcm/node_modules/aws-cdk-lib/aws-ecs/lib/fargate/fargate-service.js:1:6318)",
+              "new FargateService2 (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-HCYEcm/node_modules/aws-cdk-lib/core/lib/prop-injectable.js:1:681)",
+              "Kernel._Kernel_create (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpq8zsur8t/lib/program.js:549:25)",
+              "Kernel.create (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpq8zsur8t/lib/program.js:219:93)",
+              "KernelHost.processRequest (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpq8zsur8t/lib/program.js:15482:36)",
+              "KernelHost.run (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpq8zsur8t/lib/program.js:15442:22)",
+              "Immediate._onImmediate (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpq8zsur8t/lib/program.js:15443:45)",
               "process.processImmediate (node:internal/timers:504:21)"
             ]
           }
@@ -364,16 +364,16 @@
             "type": "aws:cdk:warning",
             "data": "minHealthyPercent has not been configured so the default value of 50% is used. The number of running tasks will decrease below the desired count during deployments etc. See https://github.com/aws/aws-cdk/issues/31705 [ack: @aws-cdk/aws-ecs:minHealthyPercent]",
             "trace": [
-              "Annotations.addMessage (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-TBUNkq/node_modules/aws-cdk-lib/core/lib/annotations.js:1:2066)",
-              "Annotations.addWarningV2 (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-TBUNkq/node_modules/aws-cdk-lib/core/lib/annotations.js:1:984)",
-              "new BaseService (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-TBUNkq/node_modules/aws-cdk-lib/aws-ecs/lib/base/base-service.js:1:8675)",
-              "new FargateService2 (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-TBUNkq/node_modules/aws-cdk-lib/aws-ecs/lib/fargate/fargate-service.js:1:6318)",
-              "new FargateService2 (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-TBUNkq/node_modules/aws-cdk-lib/core/lib/prop-injectable.js:1:681)",
-              "Kernel._Kernel_create (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpb51s2m8t/lib/program.js:549:25)",
-              "Kernel.create (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpb51s2m8t/lib/program.js:219:93)",
-              "KernelHost.processRequest (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpb51s2m8t/lib/program.js:15482:36)",
-              "KernelHost.run (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpb51s2m8t/lib/program.js:15442:22)",
-              "Immediate._onImmediate (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpb51s2m8t/lib/program.js:15443:45)",
+              "Annotations.addMessage (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-HCYEcm/node_modules/aws-cdk-lib/core/lib/annotations.js:1:2066)",
+              "Annotations.addWarningV2 (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-HCYEcm/node_modules/aws-cdk-lib/core/lib/annotations.js:1:984)",
+              "new BaseService (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-HCYEcm/node_modules/aws-cdk-lib/aws-ecs/lib/base/base-service.js:1:8675)",
+              "new FargateService2 (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-HCYEcm/node_modules/aws-cdk-lib/aws-ecs/lib/fargate/fargate-service.js:1:6318)",
+              "new FargateService2 (/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/jsii-kernel-HCYEcm/node_modules/aws-cdk-lib/core/lib/prop-injectable.js:1:681)",
+              "Kernel._Kernel_create (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpq8zsur8t/lib/program.js:549:25)",
+              "Kernel.create (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpq8zsur8t/lib/program.js:219:93)",
+              "KernelHost.processRequest (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpq8zsur8t/lib/program.js:15482:36)",
+              "KernelHost.run (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpq8zsur8t/lib/program.js:15442:22)",
+              "Immediate._onImmediate (/private/var/folders/fc/bv9lpq1j7fv_pz17txsw1r000000gn/T/tmpq8zsur8t/lib/program.js:15443:45)",
               "process.processImmediate (node:internal/timers:504:21)"
             ]
           }

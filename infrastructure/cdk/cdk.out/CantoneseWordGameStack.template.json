@@ -942,6 +942,9 @@
      }
     ],
     "Cpu": "512",
+    "EphemeralStorage": {
+     "SizeInGiB": 30
+    },
     "ExecutionRoleArn": {
      "Fn::GetAtt": [
       "TaskExecutionRole250D2532",
@@ -1335,9 +1338,9 @@
      "MaximumPercent": 200,
      "MinimumHealthyPercent": 50
     },
-    "DesiredCount": 2,
+    "DesiredCount": 1,
     "EnableECSManagedTags": false,
-    "HealthCheckGracePeriodSeconds": 60,
+    "HealthCheckGracePeriodSeconds": 120,
     "LaunchType": "FARGATE",
     "LoadBalancers": [
      {
@@ -1393,9 +1396,9 @@
      "MaximumPercent": 200,
      "MinimumHealthyPercent": 50
     },
-    "DesiredCount": 2,
+    "DesiredCount": 1,
     "EnableECSManagedTags": false,
-    "HealthCheckGracePeriodSeconds": 60,
+    "HealthCheckGracePeriodSeconds": 90,
     "LaunchType": "FARGATE",
     "LoadBalancers": [
      {
@@ -1936,7 +1939,7 @@
   "CDKMetadata": {
    "Type": "AWS::CDK::Metadata",
    "Properties": {
-    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31T227bMAz9lr0r3pbsB5K4KwIUm+EUfR1omXW0yJIhUQmCwP8+Woov64A98fCQJg9JeZ2tN5vsyye4+pWszyutqux+JJBnwdSvO8p1dn/rpNi/m7diL4pQaSWPoTJIAzej0gbCV6g0zvzMbb23UgEpa6bkATwdisH8AHoGwivcROHUheFc+GAIHeMxISl5eFtiracWDYkjyuAU3Z6dDV3U8F/iYBqH3v/DP0W6FyhdVmJnvSLrbjvwKDxzSL4FAw063lP0HxUGlMwruAZpoWxK+Bjphas914mzTjLz3ZLIgaDi7gfjCYzEiZi757sxOMjmgnsdPC9tiI3wO7eG4Rj+nOO7Mmo8xUfGGgJl0C24x7dHdBcl03kT7IWCNruXNh092sLyA4lXSqgX2jas6cU204QjZrkaPCmpLdQVaB5BmebCT27bdfxxfC8vHNvFWJroL3+Zp3hQ88gZ8SKelj9pWLi9YAGhvgLJE7fW4NohI4Ec/Kmy4Oq46dHpe1Git8GlffwM1AU+Z3GjkzWfN9nXb/xT/fZKrVwwpFrMymT/AM0L4D9xAwAA"
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31S227bMAz9lr4rGpr2B5K4KwIUm+EUfR1omXW0yJIhUQmCwP8+2oov64A98fCQIg9JreX66Vk+PsAlrFR1WhldytuBQJ0EU79uqNby9tEqsfu0H/lO5LE0Wh1iaZF6bkaFi4TvUBqc+ZnbhOCUBtLOTsk9eNnnvfkB9AqEF7iK3Oszw7nw3hJ6xmNCUnL3NsRajw1aEgdU0Wu6vnoX20HDf4m9rT2G8A//MtCdQOVlga0Lmpy/biGgCMwhhQYs1Oh5T4N/r9CjZN7B10gLZVPC10gnfBW4zjDrJDPbLokMCEruvreBwCqciLl7th2DvWwuuDMx8NL62Ai/c2vojxFOGX5qq8dTfGWcJdAW/YK7vz2gP2uVzptgJzQ08la4dPTB5o4/yHClhDphXM2a3lw9TThilmsgkFbGQVWC4RG0rc/85TZty4+H//LGse0QSxP95S/zNA9q7zkjXsTT8icNC7cTLCBWFyB15NYGfNNnJJBBOJYOfDVsenS6ThQYXPRpHz8jtZHPmV/p6Oy3J/n4LNcPv4PWKx8t6QZlkewf2KLvl3EDAAA="
    },
    "Metadata": {
     "aws:cdk:path": "CantoneseWordGameStack/CDKMetadata/Default"
