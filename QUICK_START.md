@@ -1,6 +1,23 @@
 # Quick Start Guide
 
-Get the Cantonese Word Game up and running quickly. For detailed documentation, see [README.md](README.md), [IMPLEMENTATION.md](IMPLEMENTATION.md), and [DEPLOYMENT.md](DEPLOYMENT.md).
+## 🌐 Try It Now (Production)
+
+**The application is already deployed and live on AWS!**
+
+Visit: **http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com**
+
+**Test Credentials:**
+- **Admin:** admin@example.com / admin123
+- **Teacher:** teacher@example.com / teacher123  
+- **Student:** student@example.com / student123
+
+For detailed production access information, see [`PRODUCTION_ACCESS.md`](PRODUCTION_ACCESS.md).
+
+---
+
+## 💻 Run Locally
+
+Get the Cantonese Word Game up and running on your local machine. For detailed documentation, see [README.md](README.md), [IMPLEMENTATION.md](IMPLEMENTATION.md), and [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Prerequisites
 

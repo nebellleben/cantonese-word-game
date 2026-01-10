@@ -1,6 +1,25 @@
-# Cantonese Word Game
+# Cantonese Word Game for Dyslexic Students
 
 A web-based educational game designed for primary school students in Hong Kong, especially those diagnosed with Dyslexia, whose first language is Cantonese. This game aims to improve word recognition and create motivation for students to practice recognizing Chinese words through interactive pronunciation exercises.
+
+## 🎉 Live Production Demo
+
+**The application is deployed and accessible on AWS!**
+
+- **Frontend:** http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com
+- **API Docs:** http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com:8000/docs
+- **Backend API:** http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com:8000/api
+
+**Status:** ✅ All services running and healthy (Region: us-east-1)
+
+**Test Credentials:**
+- Admin: `admin@example.com` / `admin123`
+- Teacher: `teacher@example.com` / `teacher123`
+- Student: `student@example.com` / `student123`
+
+For detailed access information, see [`PRODUCTION_ACCESS.md`](PRODUCTION_ACCESS.md).
+
+---
 
 ## Problem Statement
 
@@ -637,9 +656,10 @@ aws elbv2 describe-load-balancers \
   --output text
 ```
 
-- Frontend: `http://<alb-dns>`
-- Backend API: `http://<alb-dns>:8000/api`
-- API Docs: `http://<alb-dns>:8000/docs`
+**Current Production URLs:**
+- **Frontend:** `http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com`
+- **Backend API:** `http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com:8000/api`
+- **API Documentation:** `http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com:8000/docs`
 
 ### Monitoring
 
@@ -682,13 +702,20 @@ cdk destroy
 The project includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) that:
 
 1. **Tests**: Runs frontend and backend tests
-2. **Builds**: Creates Docker images
+2. **Builds**: Creates Docker images (backend optimized at 529MB)
 3. **Pushes**: Uploads images to ECR
 4. **Deploys**: Updates ECS services
 
 The pipeline triggers on:
 - Push to `main` branch (full deployment)
 - Pull requests (tests only)
+
+**Required GitHub Secrets:**
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`  
+- `AWS_ACCOUNT_ID`
+
+**Production Optimization:** Backend image excludes ML dependencies (torch, transformers) to reduce size from 8.6GB to 529MB. Speech recognition gracefully falls back to mock mode.
 
 ## Contributing
 

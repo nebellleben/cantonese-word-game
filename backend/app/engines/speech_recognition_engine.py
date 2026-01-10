@@ -9,11 +9,11 @@ import json
 import random
 import re
 import time
-import torch
-import librosa
 
-# Try to import transformers, fall back to mock if not available
+# Try to import ML dependencies, fall back to mock if not available
 try:
+    import torch
+    import librosa
     from transformers import WhisperProcessor, WhisperForConditionalGeneration
     TRANSFORMERS_AVAILABLE = True
 except ImportError:

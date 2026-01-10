@@ -1,6 +1,14 @@
 #!/bin/bash
 # Complete deployment script for Cantonese Word Game
 # Run this after starting Docker Desktop
+#
+# IMPORTANT: Backend must be built with linux/amd64 platform for Fargate
+# On Apple Silicon: docker build --platform linux/amd64 ...
+#
+# Current Production Status: DEPLOYED ✅
+# - Frontend: Running 1/1 tasks
+# - Backend: Running 1/1 tasks  
+# - ALB: cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com
 
 set -e
 
@@ -53,9 +61,10 @@ docker push ${ECR_REGISTRY}/cantonese-word-game-frontend:latest
 echo "✅ Frontend image pushed"
 echo ""
 
-# Step 3: Build and push backend
-echo "🏗️  Step 3: Building backend image..."
-docker build -t ${ECR_REGISTRY}/cantonese-word-game-backend:${IMAGE_TAG} \
+# Step 3: Build and push backend (with correct platform for Fargate)
+echo "🏗️  Step 3: Building backend image for linux/amd64..."
+docker build --platform linux/amd64 \
+             -t ${ECR_REGISTRY}/cantonese-word-game-backend:${IMAGE_TAG} \
              -t ${ECR_REGISTRY}/cantonese-word-game-backend:latest \
              -f backend/Dockerfile backend/
 

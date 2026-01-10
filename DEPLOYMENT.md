@@ -6,6 +6,26 @@ For project overview, see `README.md`. For implementation details, see `IMPLEMEN
 
 ---
 
+## 🎉 Current Production Deployment
+
+**Status:** ✅ **LIVE AND OPERATIONAL**
+
+**Access URLs:**
+- **Frontend Application:** http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com
+- **Backend API:** http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com:8000/api
+- **API Documentation:** http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com:8000/docs
+
+**Deployment Details:**
+- **Region:** us-east-1
+- **Stack Name:** CantoneseWordGameStack
+- **Status:** CREATE_COMPLETE
+- **Frontend Tasks:** 1/1 Running
+- **Backend Tasks:** 1/1 Running
+- **Database:** RDS PostgreSQL (db.t3.micro)
+- **Backend Image Size:** 529MB (optimized, ML dependencies optional)
+
+---
+
 ## 1. Docker Containerization
 
 ### 1.1 Images & Dockerfiles
@@ -42,6 +62,7 @@ For project overview, see `README.md`. For implementation details, see `IMPLEMEN
   - Built from `backend/Dockerfile`.
   - `DATABASE_URL` points to the `postgres` service.
   - Exposed on `8000`.
+  - **Note:** ML dependencies (torch, transformers) are optional. For production deployment, these are excluded to reduce image size from 8.6GB to 529MB. Speech recognition will use mock mode.
 - `frontend`:
   - Built from root `Dockerfile`.
   - `VITE_API_BASE_URL` points at `http://backend:8000/api`.
@@ -71,9 +92,18 @@ docker-compose down -v
 # Frontend
 docker build -t cantonese-word-game-frontend .
 
-# Backend
-docker build -t cantonese-word-game-backend -f backend/Dockerfile backend/
+# Backend (for AWS Fargate - must use linux/amd64 platform)
+docker build --platform linux/amd64 -t cantonese-word-game-backend -f backend/Dockerfile backend/
+
+# Backend with ML dependencies (local development)
+# Note: This creates a much larger image (~8.6GB vs 529MB)
+# Edit backend/pyproject.toml to move torch/transformers back to main dependencies
 ```
+
+**Important Notes:**
+- Production backend image excludes ML dependencies to optimize size and deployment speed
+- Speech recognition engine gracefully falls back to mock mode when ML libraries are unavailable
+- For AWS Fargate deployment, always use `--platform linux/amd64` flag
 
 ---
 
@@ -319,12 +349,37 @@ Then:
 
 - **Build failures due to missing `terser`**:
   - Vite is configured to use the default `esbuild` minifier instead of `terser`, so no extra action is needed.
+  
 - **Disk space errors during Docker builds**:
   - Ensure you have at least ~20GB free, especially for backend builds with PyTorch.
   - Clean Docker artifacts with `docker system prune -a --volumes -f` and clear local caches if needed.
+  - For production, ML dependencies are optional - see backend/pyproject.toml
+  
 - **ECS tasks not starting / staying at 0 running**:
-  - Check logs in the CloudWatch log groups.
-  - Verify that Secrets Manager `DATABASE_URL` is correct and that the RDS instance is reachable from the ECS tasks’ security group.
-  - Confirm that migrations run successfully on container startup.
+  - Check logs in the CloudWatch log groups: `/ecs/cantonese-word-game-backend` and `/ecs/cantonese-word-game-frontend`
+  - Verify that Secrets Manager `DATABASE_URL` is correct and contains the "uri" key
+  - Confirm that the RDS secret has been updated with: `python -c "import json; secret = json.load(open('secret.json')); secret['uri'] = f\"postgresql://{secret['username']}:{secret['password']}@{secret['host']}:{secret['port']}/{secret['dbname']}\"; print(json.dumps(secret))"`
+  - Ensure the RDS instance is reachable from the ECS tasks' security group
+  - Confirm that migrations run successfully on container startup
+  - Check if using correct platform: `docker build --platform linux/amd64` for Fargate
+
+- **Platform mismatch errors (ARM64 vs AMD64)**:
+  - Fargate requires linux/amd64 images
+  - On Apple Silicon Macs, always use: `docker build --platform linux/amd64 ...`
+  - Error message: "image Manifest does not contain descriptor matching platform 'linux/amd64'"
+  
+- **Backend container exits with "ModuleNotFoundError: No module named 'torch'"**:
+  - This means the image was built with ML dependencies but they're now optional
+  - The speech_recognition_engine.py has been updated to handle missing ML dependencies gracefully
+  - Rebuild the image to pick up the updated imports
+  
+- **RDS secret missing "uri" key**:
+  - The CDK-generated RDS secret contains individual fields (host, port, username, password, dbname) but not "uri"
+  - After stack deployment, add the uri key:
+    ```bash
+    aws secretsmanager get-secret-value --secret-id <SECRET_ARN> --query 'SecretString' --output text > secret.json
+    python3 -c "import json; s=json.load(open('secret.json')); s['uri']=f\"postgresql://{s['username']}:{s['password']}@{s['host']}:{s['port']}/{s['dbname']}\"; json.dump(s, open('secret_updated.json', 'w'))"
+    aws secretsmanager put-secret-value --secret-id <SECRET_ARN> --secret-string file://secret_updated.json
+    ```
 
 

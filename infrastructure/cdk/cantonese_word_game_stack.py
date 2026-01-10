@@ -199,6 +199,7 @@ class CantoneseWordGameStack(Stack):
             "BackendTaskDefinition",
             cpu=backend_cpu,
             memory_limit_mib=backend_memory,
+            ephemeral_storage_gib=30,  # Increased from default 20GB for large ML dependencies
             execution_role=task_execution_role,
             task_role=backend_task_role,
         )
@@ -351,7 +352,7 @@ class CantoneseWordGameStack(Stack):
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
             ),
-            health_check_grace_period=Duration.seconds(60),
+            health_check_grace_period=Duration.seconds(120),  # Increased for slower startup
         )
 
         backend_service.attach_to_application_target_group(backend_target_group)
@@ -368,7 +369,7 @@ class CantoneseWordGameStack(Stack):
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
             ),
-            health_check_grace_period=Duration.seconds(60),
+            health_check_grace_period=Duration.seconds(90),  # Increased for slower startup
         )
 
         frontend_service.attach_to_application_target_group(frontend_target_group)
