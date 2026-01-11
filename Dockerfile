@@ -14,7 +14,11 @@ RUN npm install
 # Copy source code
 COPY . .
 
-# Build the application
+# Accept build argument for API URL
+ARG VITE_API_BASE_URL=http://localhost:8000/api
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
+# Build the application with the API URL baked in
 RUN npm run build
 
 # Production stage

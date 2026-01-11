@@ -51,9 +51,24 @@ echo ""
 
 # Step 2: Build and push frontend
 echo "🏗️  Step 2: Building frontend image..."
-docker build -t ${ECR_REGISTRY}/cantonese-word-game-frontend:${IMAGE_TAG} \
-             -t ${ECR_REGISTRY}/cantonese-word-game-frontend:latest \
-             -f Dockerfile .
+
+# Get ALB DNS dynamically for frontend API configuration
+ALB_DNS=$(aws elbv2 describe-load-balancers \
+    --region ${AWS_REGION} \
+    --query 'LoadBalancers[?LoadBalancerName==`cantonese-word-game-alb`].DNSName' \
+    --output text 2>/dev/null || echo "")
+
+if [ -z "$ALB_DNS" ]; then
+    echo "⚠️  Warning: Could not retrieve ALB DNS, using localhost as fallback"
+    ALB_DNS="localhost"
+fi
+
+echo "Building frontend with API URL: http://${ALB_DNS}:8000/api"
+docker build \
+    --build-arg VITE_API_BASE_URL=http://${ALB_DNS}:8000/api \
+    -t ${ECR_REGISTRY}/cantonese-word-game-frontend:${IMAGE_TAG} \
+    -t ${ECR_REGISTRY}/cantonese-word-game-frontend:latest \
+    -f Dockerfile .
 
 echo "📤 Pushing frontend image..."
 docker push ${ECR_REGISTRY}/cantonese-word-game-frontend:${IMAGE_TAG}

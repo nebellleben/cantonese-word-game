@@ -874,6 +874,10 @@
        {
         "Name": "ACCESS_TOKEN_EXPIRE_MINUTES",
         "Value": "1440"
+       },
+       {
+        "Name": "CORS_ORIGINS",
+        "Value": "http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com"
        }
       ],
       "Essential": true,
@@ -966,159 +970,6 @@
    },
    "Metadata": {
     "aws:cdk:path": "CantoneseWordGameStack/BackendTaskDefinition/Resource"
-   }
-  },
-  "FrontendSecurityGroup69AD9D5B": {
-   "Type": "AWS::EC2::SecurityGroup",
-   "Properties": {
-    "GroupDescription": "Security group for frontend service",
-    "SecurityGroupEgress": [
-     {
-      "CidrIp": "0.0.0.0/0",
-      "Description": "Allow all outbound traffic by default",
-      "IpProtocol": "-1"
-     }
-    ],
-    "SecurityGroupIngress": [
-     {
-      "CidrIp": "0.0.0.0/0",
-      "Description": "Allow internet to access frontend",
-      "FromPort": 80,
-      "IpProtocol": "tcp",
-      "ToPort": 80
-     }
-    ],
-    "VpcId": {
-     "Ref": "VPCB9E5F0B4"
-    }
-   },
-   "Metadata": {
-    "aws:cdk:path": "CantoneseWordGameStack/FrontendSecurityGroup/Resource"
-   }
-  },
-  "FrontendSecurityGroupfromCantoneseWordGameStackALBSecurityGroupA716A4D9801E1135E4": {
-   "Type": "AWS::EC2::SecurityGroupIngress",
-   "Properties": {
-    "Description": "Load balancer to target",
-    "FromPort": 80,
-    "GroupId": {
-     "Fn::GetAtt": [
-      "FrontendSecurityGroup69AD9D5B",
-      "GroupId"
-     ]
-    },
-    "IpProtocol": "tcp",
-    "SourceSecurityGroupId": {
-     "Fn::GetAtt": [
-      "ALBSecurityGroup8B8624F8",
-      "GroupId"
-     ]
-    },
-    "ToPort": 80
-   },
-   "Metadata": {
-    "aws:cdk:path": "CantoneseWordGameStack/FrontendSecurityGroup/from CantoneseWordGameStackALBSecurityGroupA716A4D9:80"
-   }
-  },
-  "FrontendTaskDefinitionTaskRole0DD17CB3": {
-   "Type": "AWS::IAM::Role",
-   "Properties": {
-    "AssumeRolePolicyDocument": {
-     "Statement": [
-      {
-       "Action": "sts:AssumeRole",
-       "Effect": "Allow",
-       "Principal": {
-        "Service": "ecs-tasks.amazonaws.com"
-       }
-      }
-     ],
-     "Version": "2012-10-17"
-    }
-   },
-   "Metadata": {
-    "aws:cdk:path": "CantoneseWordGameStack/FrontendTaskDefinition/TaskRole/Resource"
-   }
-  },
-  "FrontendTaskDefinition6CBC2B00": {
-   "Type": "AWS::ECS::TaskDefinition",
-   "Properties": {
-    "ContainerDefinitions": [
-     {
-      "Environment": [
-       {
-        "Name": "VITE_API_BASE_URL",
-        "Value": {
-         "Fn::Join": [
-          "",
-          [
-           "http://backend-alb-",
-           {
-            "Ref": "AWS::AccountId"
-           },
-           ".elb.amazonaws.com/api"
-          ]
-         ]
-        }
-       }
-      ],
-      "Essential": true,
-      "Image": {
-       "Fn::Join": [
-        "",
-        [
-         {
-          "Ref": "AWS::AccountId"
-         },
-         ".dkr.ecr.us-east-1.",
-         {
-          "Ref": "AWS::URLSuffix"
-         },
-         "/cantonese-word-game-frontend:latest"
-        ]
-       ]
-      },
-      "LogConfiguration": {
-       "LogDriver": "awslogs",
-       "Options": {
-        "awslogs-group": {
-         "Ref": "FrontendLogGroupCE4F14E0"
-        },
-        "awslogs-stream-prefix": "frontend",
-        "awslogs-region": "us-east-1"
-       }
-      },
-      "Name": "FrontendContainer",
-      "PortMappings": [
-       {
-        "ContainerPort": 80,
-        "Protocol": "tcp"
-       }
-      ]
-     }
-    ],
-    "Cpu": "256",
-    "ExecutionRoleArn": {
-     "Fn::GetAtt": [
-      "TaskExecutionRole250D2532",
-      "Arn"
-     ]
-    },
-    "Family": "CantoneseWordGameStackFrontendTaskDefinition1358A764",
-    "Memory": "512",
-    "NetworkMode": "awsvpc",
-    "RequiresCompatibilities": [
-     "FARGATE"
-    ],
-    "TaskRoleArn": {
-     "Fn::GetAtt": [
-      "FrontendTaskDefinitionTaskRole0DD17CB3",
-      "Arn"
-     ]
-    }
-   },
-   "Metadata": {
-    "aws:cdk:path": "CantoneseWordGameStack/FrontendTaskDefinition/Resource"
    }
   },
   "ALBAEE750D2": {
@@ -1276,6 +1127,179 @@
    },
    "Metadata": {
     "aws:cdk:path": "CantoneseWordGameStack/ALB/FrontendListener/Resource"
+   }
+  },
+  "ALBDNSParameter52ABC8D3": {
+   "Type": "AWS::SSM::Parameter",
+   "Properties": {
+    "Description": "ALB DNS name for Cantonese Word Game",
+    "Name": "/cantonese-word-game/alb-dns",
+    "Type": "String",
+    "Value": {
+     "Fn::GetAtt": [
+      "ALBAEE750D2",
+      "DNSName"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CantoneseWordGameStack/ALBDNSParameter/Resource"
+   }
+  },
+  "FrontendSecurityGroup69AD9D5B": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Security group for frontend service",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow internet to access frontend",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     }
+    ],
+    "VpcId": {
+     "Ref": "VPCB9E5F0B4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CantoneseWordGameStack/FrontendSecurityGroup/Resource"
+   }
+  },
+  "FrontendSecurityGroupfromCantoneseWordGameStackALBSecurityGroupA716A4D9801E1135E4": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "FromPort": 80,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "FrontendSecurityGroup69AD9D5B",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "ALBSecurityGroup8B8624F8",
+      "GroupId"
+     ]
+    },
+    "ToPort": 80
+   },
+   "Metadata": {
+    "aws:cdk:path": "CantoneseWordGameStack/FrontendSecurityGroup/from CantoneseWordGameStackALBSecurityGroupA716A4D9:80"
+   }
+  },
+  "FrontendTaskDefinitionTaskRole0DD17CB3": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CantoneseWordGameStack/FrontendTaskDefinition/TaskRole/Resource"
+   }
+  },
+  "FrontendTaskDefinition6CBC2B00": {
+   "Type": "AWS::ECS::TaskDefinition",
+   "Properties": {
+    "ContainerDefinitions": [
+     {
+      "Environment": [
+       {
+        "Name": "VITE_API_BASE_URL",
+        "Value": {
+         "Fn::Join": [
+          "",
+          [
+           "http://",
+           {
+            "Fn::GetAtt": [
+             "ALBAEE750D2",
+             "DNSName"
+            ]
+           },
+           ":8000/api"
+          ]
+         ]
+        }
+       }
+      ],
+      "Essential": true,
+      "Image": {
+       "Fn::Join": [
+        "",
+        [
+         {
+          "Ref": "AWS::AccountId"
+         },
+         ".dkr.ecr.us-east-1.",
+         {
+          "Ref": "AWS::URLSuffix"
+         },
+         "/cantonese-word-game-frontend:latest"
+        ]
+       ]
+      },
+      "LogConfiguration": {
+       "LogDriver": "awslogs",
+       "Options": {
+        "awslogs-group": {
+         "Ref": "FrontendLogGroupCE4F14E0"
+        },
+        "awslogs-stream-prefix": "frontend",
+        "awslogs-region": "us-east-1"
+       }
+      },
+      "Name": "FrontendContainer",
+      "PortMappings": [
+       {
+        "ContainerPort": 80,
+        "Protocol": "tcp"
+       }
+      ]
+     }
+    ],
+    "Cpu": "256",
+    "ExecutionRoleArn": {
+     "Fn::GetAtt": [
+      "TaskExecutionRole250D2532",
+      "Arn"
+     ]
+    },
+    "Family": "CantoneseWordGameStackFrontendTaskDefinition1358A764",
+    "Memory": "512",
+    "NetworkMode": "awsvpc",
+    "RequiresCompatibilities": [
+     "FARGATE"
+    ],
+    "TaskRoleArn": {
+     "Fn::GetAtt": [
+      "FrontendTaskDefinitionTaskRole0DD17CB3",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CantoneseWordGameStack/FrontendTaskDefinition/Resource"
    }
   },
   "BackendTargetGroupECF98930": {
@@ -1939,7 +1963,7 @@
   "CDKMetadata": {
    "Type": "AWS::CDK::Metadata",
    "Properties": {
-    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31S227bMAz9lr4rGpr2B5K4KwIUm+EUfR1omXW0yJIhUQmCwP8+2oov64A98fCQIg9JreX66Vk+PsAlrFR1WhldytuBQJ0EU79uqNby9tEqsfu0H/lO5LE0Wh1iaZF6bkaFi4TvUBqc+ZnbhOCUBtLOTsk9eNnnvfkB9AqEF7iK3Oszw7nw3hJ6xmNCUnL3NsRajw1aEgdU0Wu6vnoX20HDf4m9rT2G8A//MtCdQOVlga0Lmpy/biGgCMwhhQYs1Oh5T4N/r9CjZN7B10gLZVPC10gnfBW4zjDrJDPbLokMCEruvreBwCqciLl7th2DvWwuuDMx8NL62Ai/c2vojxFOGX5qq8dTfGWcJdAW/YK7vz2gP2uVzptgJzQ08la4dPTB5o4/yHClhDphXM2a3lw9TThilmsgkFbGQVWC4RG0rc/85TZty4+H//LGse0QSxP95S/zNA9q7zkjXsTT8icNC7cTLCBWFyB15NYGfNNnJJBBOJYOfDVsenS6ThQYXPRpHz8jtZHPmV/p6Oy3J/n4LNcPv4PWKx8t6QZlkewf2KLvl3EDAAA="
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31S227bMAz9lr4rHpr2B5K4KwIUm+EUfR1ohXW02JIhUgmCwP8+2vJtHbAnHR5S5OFlnayfnpPHB7jSSh/Pq8oUyf3AoM9KqF931Ovk/tFotfu0H9lOZaGojD6EwiJ33IxyFxjfoahw5mduQ+S0ATbOTsEdeNln3fMD+BUYr3BTmTcXgXPivWX0gseAqGSwNixaTzVaVgfUwRu+vXoXml7Df4m9LT0S/cO/9HSrUPskx8aRYedvWyBUJBwy1WChRC9z6u0hQ4fi8w6+RF4omwK+elrljyR5+l4nmel2SaTAUEj1vSUGq3Ei5urpdnR2siXhrgokQ+t8I/wupaFbBp1T/DTWjKv4yjjLYCz6BTf8PaC/GB3XG2GrDNTJPXdx6f2bOTmQfksRtapypWh6c+XU4YhFbgXERlcOjgVU0oKx5UVObtM08rm/lzfxbXtf7OgvexlnpFE7xIx44Y/DnzQszFYR1d3Ze6megYcah+lNRqtEYzhegfVJ1FXg684fQQp0Khz4Y7+M0WhblSO54OPIfgZugmw8u/HJ2W9PyeNzsn74TcasfLBsakzy+P4BEZKUd5QDAAA="
    },
    "Metadata": {
     "aws:cdk:path": "CantoneseWordGameStack/CDKMetadata/Default"

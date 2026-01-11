@@ -38,8 +38,12 @@ RUN useradd -m -u 1000 appuser && \
 # Set working directory
 WORKDIR /app
 
-# Copy virtual environment from builder
-COPY --from=builder --chown=appuser:appuser /app/.venv /app/.venv
+# Copy virtual environment from builder WITHOUT chown flag
+# We'll change ownership in a separate RUN command to avoid BuildKit cache mount conflicts
+COPY --from=builder /app/.venv /app/.venv
+
+# Change ownership after copying to avoid read-only filesystem issues
+RUN chown -R appuser:appuser /app/.venv
 
 # Copy application code
 COPY --chown=appuser:appuser . .
@@ -60,4 +64,3 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # Run migrations and start server
 # Use direct python commands instead of uv run to avoid permission issues
 CMD ["sh", "-c", "python -m alembic upgrade head && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"]
-

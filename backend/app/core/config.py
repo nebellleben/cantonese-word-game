@@ -15,8 +15,8 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440  # 24 hours
     
-    # CORS
-    cors_origins: List[str] = ["http://localhost:5173", "http://localhost:3000"]
+    # CORS - accept both string and list types to avoid JSON parsing errors
+    cors_origins: str | List[str] = ["http://localhost:5173", "http://localhost:3000"]
     
     # Database
     database_url: str = "sqlite:///./cantonese_game.db"
@@ -28,20 +28,32 @@ class Settings(BaseSettings):
     aws_secrets_manager_secret_name: str | None = None
     aws_region: str = "us-east-1"
     
-    model_config = ConfigDict(env_file=".env", case_sensitive=True)
+    model_config = ConfigDict(env_file=".env", case_sensitive=False, extra='ignore')
     
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, v):
-        """Parse CORS origins from string or list."""
+        """Parse CORS origins from string or list. Always returns a list."""
+        # If already a list, return as-is
+        if isinstance(v, list):
+            return v
+
+        # If it's a string, parse it
         if isinstance(v, str):
-            try:
-                # Try to parse as JSON array
-                return json.loads(v)
-            except (json.JSONDecodeError, ValueError):
-                # If not JSON, split by comma
-                return [origin.strip() for origin in v.split(",") if origin.strip()]
-        return v
+            # If it's just "*", return it as a list for wildcard CORS
+            if v.strip() == "*":
+                return ["*"]
+            # If it looks like a JSON array, try to parse it
+            if v.strip().startswith("["):
+                try:
+                    return json.loads(v)
+                except (json.JSONDecodeError, ValueError):
+                    pass  # Fall through to comma-separated parsing
+            # Treat as comma-separated list
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+
+        # Fallback: return empty list
+        return []
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

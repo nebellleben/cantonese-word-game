@@ -11,6 +11,7 @@ from aws_cdk import (
     aws_iam as iam,
     aws_logs as logs,
     aws_secretsmanager as secretsmanager,
+    aws_ssm as ssm,
     aws_cloudwatch as cloudwatch,
     aws_cloudwatch_actions as cw_actions,
     aws_sns as sns,
@@ -217,6 +218,8 @@ class CantoneseWordGameStack(Stack):
                 "PROJECT_NAME": "Cantonese Word Game API",
                 "ALGORITHM": "HS256",
                 "ACCESS_TOKEN_EXPIRE_MINUTES": "1440",
+                # CORS origins - must match frontend origin exactly when using credentials
+                "CORS_ORIGINS": "http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com",
             },
             secrets={
                 "SECRET_KEY": ecs.Secret.from_secrets_manager(
@@ -230,6 +233,24 @@ class CantoneseWordGameStack(Stack):
 
         backend_container.add_port_mappings(
             ecs.PortMapping(container_port=8000, protocol=ecs.Protocol.TCP)
+        )
+
+        # Create Application Load Balancer (moved here so frontend can reference it)
+        alb = elbv2.ApplicationLoadBalancer(
+            self,
+            "ALB",
+            vpc=vpc,
+            internet_facing=True,
+            load_balancer_name="cantonese-word-game-alb",
+        )
+
+        # Store ALB DNS in SSM Parameter Store for easy access
+        ssm.StringParameter(
+            self,
+            "ALBDNSParameter",
+            parameter_name="/cantonese-word-game/alb-dns",
+            string_value=alb.load_balancer_dns_name,
+            description="ALB DNS name for Cantonese Word Game"
         )
 
         # Create Frontend Security Group
@@ -259,21 +280,12 @@ class CantoneseWordGameStack(Stack):
                 log_group=frontend_log_group,
             ),
             environment={
-                "VITE_API_BASE_URL": f"http://backend-alb-{self.account}.elb.amazonaws.com/api",
+                "VITE_API_BASE_URL": f"http://{alb.load_balancer_dns_name}:8000/api",
             },
         )
 
         frontend_container.add_port_mappings(
             ecs.PortMapping(container_port=80, protocol=ecs.Protocol.TCP)
-        )
-
-        # Create Application Load Balancer
-        alb = elbv2.ApplicationLoadBalancer(
-            self,
-            "ALB",
-            vpc=vpc,
-            internet_facing=True,
-            load_balancer_name="cantonese-word-game-alb",
         )
 
         # Create Backend Target Group

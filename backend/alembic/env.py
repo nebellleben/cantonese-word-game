@@ -20,7 +20,9 @@ from app.core.config import settings
 config = context.config
 
 # Override sqlalchemy.url with our settings
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# Note: We don't use set_main_option because it can cause interpolation errors
+# with special characters in passwords. Instead, we'll use the URL directly
+# in the migration functions below.
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -49,7 +51,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url = settings.database_url  # Use the URL directly from settings
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -68,8 +70,10 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    # Create engine configuration from our database URL
+    configuration = {"sqlalchemy.url": settings.database_url}
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )

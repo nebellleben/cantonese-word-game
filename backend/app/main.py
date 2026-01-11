@@ -9,10 +9,14 @@ app = FastAPI(
     description="API for Cantonese Word Game - A pronunciation learning game",
 )
 
+# Debug: Print CORS origins
+print(f"CORS Origins configured: {settings.cors_origins}")
+print(f"CORS Origins type: {type(settings.cors_origins)}")
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=settings.cors_origins if settings.cors_origins != ["*"] else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

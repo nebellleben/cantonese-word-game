@@ -59,7 +59,7 @@ class ApiClient {
         // Handle connection errors (refused, network errors, or no response)
         // ERR_NETWORK can occur for connection refused, timeout, or other network issues
         // If there's no response, it's likely the backend isn't running
-        if (error.code === 'ECONNREFUSED' || 
+        if (error.code === 'ECONNREFUSED' ||
             error.code === 'ERR_NETWORK' ||
             error.code === 'ERR_CONNECTION_REFUSED' ||
             error.code === 'ERR_CONNECTION_TIMED_OUT' ||
