@@ -1,5 +1,5 @@
 {
-  "app": "python app.py",
+  "app": "python3 app.py",
   "watch": {
     "include": [
       "**"
@@ -48,7 +48,9 @@
     "frontend_memory": "512",
     "backend_cpu": "512",
     "backend_memory": "1024",
-    "desired_count": 1
+    "desired_count": 1,
+    "domain_name": "flumenlucidum.com",
+    "subdomain_name": "app"
   }
 }
 

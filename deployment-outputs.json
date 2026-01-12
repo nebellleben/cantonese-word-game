@@ -1,0 +1,13 @@
+{
+  "CantoneseWordGameStack": {
+    "FrontendECRRepository": "808055627316.dkr.ecr.us-east-1.amazonaws.com/cantonese-word-game-frontend",
+    "DomainName": "app.flumenlucidum.com",
+    "Nameservers": "ns-864.awsdns-44.net, ns-141.awsdns-17.com, ns-1378.awsdns-44.org, ns-1830.awsdns-36.co.uk",
+    "HostedZoneId": "Z08999286EHLAHBXFSBB",
+    "BackendECRRepository": "808055627316.dkr.ecr.us-east-1.amazonaws.com/cantonese-word-game-backend",
+    "CloudWatchDashboard": "https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=CantoneseWordGame-Dashboard",
+    "LoadBalancerDNS": "cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com",
+    "SecretsManagerSecret": "arn:aws:secretsmanager:us-east-1:808055627316:secret:cantonese-word-game-secrets-wEIZfH",
+    "DatabaseEndpoint": "cantonesewordgamestack-postgresqlinstanced9ad3cf0-utlkvstvyzlu.cczsuiuoyaw2.us-east-1.rds.amazonaws.com"
+  }
+}

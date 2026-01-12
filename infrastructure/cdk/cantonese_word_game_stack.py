@@ -15,6 +15,10 @@ from aws_cdk import (
     aws_cloudwatch as cloudwatch,
     aws_cloudwatch_actions as cw_actions,
     aws_sns as sns,
+    aws_certificatemanager as acm,
+    aws_route53 as route53,
+    aws_route53_targets as route53_targets,
+    Fn,
     Duration,
     RemovalPolicy,
     CfnOutput,
@@ -34,6 +38,11 @@ class CantoneseWordGameStack(Stack):
         backend_cpu = int(self.node.try_get_context("backend_cpu") or "512")
         backend_memory = int(self.node.try_get_context("backend_memory") or "1024")
         desired_count = int(self.node.try_get_context("desired_count") or 2)
+
+        # Domain configuration
+        domain_name = self.node.try_get_context("domain_name") or "flumenlucidum.com"
+        subdomain_name = self.node.try_get_context("subdomain_name") or "app"
+        full_domain = f"{subdomain_name}.{domain_name}"
 
         # Create VPC
         vpc = ec2.Vpc(
@@ -219,7 +228,7 @@ class CantoneseWordGameStack(Stack):
                 "ALGORITHM": "HS256",
                 "ACCESS_TOKEN_EXPIRE_MINUTES": "1440",
                 # CORS origins - must match frontend origin exactly when using credentials
-                "CORS_ORIGINS": "http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com",
+                "CORS_ORIGINS": f"https://{full_domain}",
             },
             secrets={
                 "SECRET_KEY": ecs.Secret.from_secrets_manager(
@@ -253,6 +262,31 @@ class CantoneseWordGameStack(Stack):
             description="ALB DNS name for Cantonese Word Game"
         )
 
+        # Create Route 53 Hosted Zone
+        hosted_zone = route53.HostedZone(
+            self,
+            "HostedZone",
+            zone_name=domain_name,
+            comment=f"Hosted zone for {domain_name}",
+        )
+
+        # Create A record for app subdomain
+        route53.ARecord(
+            self,
+            "AppARecord",
+            zone=hosted_zone,
+            record_name=subdomain_name,
+            target=route53.RecordTarget.from_alias(route53_targets.LoadBalancerTarget(alb)),
+        )
+
+        # Create ACM Certificate
+        certificate = acm.Certificate(
+            self,
+            "Certificate",
+            domain_name=full_domain,
+            validation=acm.CertificateValidation.from_dns(hosted_zone),
+        )
+
         # Create Frontend Security Group
         frontend_security_group = ec2.SecurityGroup(
             self,
@@ -280,7 +314,7 @@ class CantoneseWordGameStack(Stack):
                 log_group=frontend_log_group,
             ),
             environment={
-                "VITE_API_BASE_URL": f"http://{alb.load_balancer_dns_name}:8000/api",
+                "VITE_API_BASE_URL": f"https://{full_domain}/api",
             },
         )
 
@@ -322,20 +356,36 @@ class CantoneseWordGameStack(Stack):
             ),
         )
 
-        # Create Backend Listener
-        backend_listener = alb.add_listener(
-            "BackendListener",
-            port=8000,
-            protocol=elbv2.ApplicationProtocol.HTTP,
-            default_target_groups=[backend_target_group],
+        # MAIN HTTPS Listener with path-based routing
+        https_listener = alb.add_listener(
+            "HTTPSListener",
+            port=443,
+            protocol=elbv2.ApplicationProtocol.HTTPS,
+            certificates=[certificate],
+            default_target_groups=[frontend_target_group],
+            ssl_policy=elbv2.SslPolicy.RECOMMENDED,
         )
 
-        # Create Frontend Listener
-        frontend_listener = alb.add_listener(
-            "FrontendListener",
+        # Add path-based rule for /api/* to backend
+        https_listener.add_action(
+            "BackendAPIRule",
+            priority=10,
+            conditions=[elbv2.ListenerRuleCondition.path_patterns("/api/*")],
+            action=elbv2.ListenerAction.forward([elbv2.TargetGroup(
+                backend_target_group,
+            )]),
+        )
+
+        # HTTP to HTTPS Redirect
+        http_listener = alb.add_listener(
+            "HTTPListener",
             port=80,
             protocol=elbv2.ApplicationProtocol.HTTP,
-            default_target_groups=[frontend_target_group],
+            default_action=elbv2.ListenerAction.redirect(
+                port="443",
+                protocol="HTTPS",
+                permanent=True,
+            ),
         )
 
         # Allow ALB to access backend
@@ -345,11 +395,30 @@ class CantoneseWordGameStack(Stack):
             "Allow ALB to access backend",
         )
 
+        # Update backend security group to allow HTTPS from ALB
+        backend_security_group.add_ingress_rule(
+            ec2.Peer.ipv4(vpc.vpc_cidr_block),
+            ec2.Port.tcp(8443),
+            "Allow ALB to access backend via HTTPS",
+        )
+
         # Allow internet to access frontend
         frontend_security_group.add_ingress_rule(
             ec2.Peer.any_ipv4(),
             ec2.Port.tcp(80),
             "Allow internet to access frontend",
+        )
+
+        # Allow HTTPS from internet
+        frontend_security_group.add_ingress_rule(
+            ec2.Peer.any_ipv4(),
+            ec2.Port.tcp(443),
+            "Allow HTTPS access from internet",
+        )
+        frontend_security_group.add_ingress_rule(
+            ec2.Peer.any_ipv4(),
+            ec2.Port.tcp(8443),
+            "Allow HTTPS backend access from internet",
         )
 
         # Create Backend ECS Service
@@ -557,5 +626,26 @@ class CantoneseWordGameStack(Stack):
             "CloudWatchDashboard",
             value=f"https://console.aws.amazon.com/cloudwatch/home?region={self.region}#dashboards:name={dashboard.dashboard_name}",
             description="CloudWatch Dashboard URL",
+        )
+
+        CfnOutput(
+            self,
+            "DomainName",
+            value=full_domain,
+            description="Full domain name for the application",
+        )
+
+        CfnOutput(
+            self,
+            "HostedZoneId",
+            value=hosted_zone.hosted_zone_id,
+            description="Route 53 Hosted Zone ID",
+        )
+
+        CfnOutput(
+            self,
+            "Nameservers",
+            value=Fn.join(", ", hosted_zone.hosted_zone_name_servers),
+            description="Nameservers to configure at domain registrar",
         )
 

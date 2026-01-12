@@ -819,6 +819,18 @@
       "FromPort": 8000,
       "IpProtocol": "tcp",
       "ToPort": 8000
+     },
+     {
+      "CidrIp": {
+       "Fn::GetAtt": [
+        "VPCB9E5F0B4",
+        "CidrBlock"
+       ]
+      },
+      "Description": "Allow ALB to access backend via HTTPS",
+      "FromPort": 8443,
+      "IpProtocol": "tcp",
+      "ToPort": 8443
      }
     ],
     "VpcId": {
@@ -877,7 +889,7 @@
        },
        {
         "Name": "CORS_ORIGINS",
-        "Value": "http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com"
+        "Value": "https://app.flumenlucidum.com"
        }
       ],
       "Essential": true,
@@ -1018,10 +1030,10 @@
     "SecurityGroupIngress": [
      {
       "CidrIp": "0.0.0.0/0",
-      "Description": "Allow from anyone on port 8000",
-      "FromPort": 8000,
+      "Description": "Allow from anyone on port 443",
+      "FromPort": 443,
       "IpProtocol": "tcp",
-      "ToPort": 8000
+      "ToPort": 443
      },
      {
       "CidrIp": "0.0.0.0/0",
@@ -1029,6 +1041,20 @@
       "FromPort": 80,
       "IpProtocol": "tcp",
       "ToPort": 80
+     },
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow from anyone on port 8443",
+      "FromPort": 8443,
+      "IpProtocol": "tcp",
+      "ToPort": 8443
+     },
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow from anyone on port 8000",
+      "FromPort": 8000,
+      "IpProtocol": "tcp",
+      "ToPort": 8000
      }
     ],
     "VpcId": {
@@ -1087,30 +1113,16 @@
     "aws:cdk:path": "CantoneseWordGameStack/ALB/SecurityGroup/to CantoneseWordGameStackFrontendSecurityGroup9F43FBD4:80"
    }
   },
-  "ALBBackendListener545F3CFF": {
+  "ALBFrontendHTTPSListener23DCBED5": {
    "Type": "AWS::ElasticLoadBalancingV2::Listener",
    "Properties": {
-    "DefaultActions": [
+    "Certificates": [
      {
-      "TargetGroupArn": {
-       "Ref": "BackendTargetGroupECF98930"
-      },
-      "Type": "forward"
+      "CertificateArn": {
+       "Ref": "Certificate4E7ABB08"
+      }
      }
     ],
-    "LoadBalancerArn": {
-     "Ref": "ALBAEE750D2"
-    },
-    "Port": 8000,
-    "Protocol": "HTTP"
-   },
-   "Metadata": {
-    "aws:cdk:path": "CantoneseWordGameStack/ALB/BackendListener/Resource"
-   }
-  },
-  "ALBFrontendListenerD31C403C": {
-   "Type": "AWS::ElasticLoadBalancingV2::Listener",
-   "Properties": {
     "DefaultActions": [
      {
       "TargetGroupArn": {
@@ -1122,11 +1134,87 @@
     "LoadBalancerArn": {
      "Ref": "ALBAEE750D2"
     },
+    "Port": 443,
+    "Protocol": "HTTPS",
+    "SslPolicy": "ELBSecurityPolicy-2016-08"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CantoneseWordGameStack/ALB/FrontendHTTPSListener/Resource"
+   }
+  },
+  "ALBFrontendHTTPListener48E64C12": {
+   "Type": "AWS::ElasticLoadBalancingV2::Listener",
+   "Properties": {
+    "DefaultActions": [
+     {
+      "RedirectConfig": {
+       "Port": "443",
+       "Protocol": "HTTPS",
+       "StatusCode": "HTTP_301"
+      },
+      "Type": "redirect"
+     }
+    ],
+    "LoadBalancerArn": {
+     "Ref": "ALBAEE750D2"
+    },
     "Port": 80,
     "Protocol": "HTTP"
    },
    "Metadata": {
-    "aws:cdk:path": "CantoneseWordGameStack/ALB/FrontendListener/Resource"
+    "aws:cdk:path": "CantoneseWordGameStack/ALB/FrontendHTTPListener/Resource"
+   }
+  },
+  "ALBBackendHTTPSListener37AAB8F4": {
+   "Type": "AWS::ElasticLoadBalancingV2::Listener",
+   "Properties": {
+    "Certificates": [
+     {
+      "CertificateArn": {
+       "Ref": "Certificate4E7ABB08"
+      }
+     }
+    ],
+    "DefaultActions": [
+     {
+      "TargetGroupArn": {
+       "Ref": "BackendTargetGroupECF98930"
+      },
+      "Type": "forward"
+     }
+    ],
+    "LoadBalancerArn": {
+     "Ref": "ALBAEE750D2"
+    },
+    "Port": 8443,
+    "Protocol": "HTTPS",
+    "SslPolicy": "ELBSecurityPolicy-2016-08"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CantoneseWordGameStack/ALB/BackendHTTPSListener/Resource"
+   }
+  },
+  "ALBBackendHTTPListenerF6AE6F17": {
+   "Type": "AWS::ElasticLoadBalancingV2::Listener",
+   "Properties": {
+    "DefaultActions": [
+     {
+      "RedirectConfig": {
+       "Port": "8443",
+       "Protocol": "HTTPS",
+       "StatusCode": "HTTP_301"
+      },
+      "Type": "redirect"
+     }
+    ],
+    "LoadBalancerArn": {
+     "Ref": "ALBAEE750D2"
+    },
+    "Port": 8000,
+    "Protocol": "HTTP"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CantoneseWordGameStack/ALB/BackendHTTPListener/Resource"
    }
   },
   "ALBDNSParameter52ABC8D3": {
@@ -1144,6 +1232,77 @@
    },
    "Metadata": {
     "aws:cdk:path": "CantoneseWordGameStack/ALBDNSParameter/Resource"
+   }
+  },
+  "HostedZoneDB99F866": {
+   "Type": "AWS::Route53::HostedZone",
+   "Properties": {
+    "HostedZoneConfig": {
+     "Comment": "Hosted zone for flumenlucidum.com"
+    },
+    "Name": "flumenlucidum.com."
+   },
+   "Metadata": {
+    "aws:cdk:path": "CantoneseWordGameStack/HostedZone/Resource"
+   }
+  },
+  "AppARecord4FBFEDE4": {
+   "Type": "AWS::Route53::RecordSet",
+   "Properties": {
+    "AliasTarget": {
+     "DNSName": {
+      "Fn::Join": [
+       "",
+       [
+        "dualstack.",
+        {
+         "Fn::GetAtt": [
+          "ALBAEE750D2",
+          "DNSName"
+         ]
+        }
+       ]
+      ]
+     },
+     "HostedZoneId": {
+      "Fn::GetAtt": [
+       "ALBAEE750D2",
+       "CanonicalHostedZoneID"
+      ]
+     }
+    },
+    "HostedZoneId": {
+     "Ref": "HostedZoneDB99F866"
+    },
+    "Name": "app.flumenlucidum.com.",
+    "Type": "A"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CantoneseWordGameStack/AppARecord/Resource"
+   }
+  },
+  "Certificate4E7ABB08": {
+   "Type": "AWS::CertificateManager::Certificate",
+   "Properties": {
+    "DomainName": "app.flumenlucidum.com",
+    "DomainValidationOptions": [
+     {
+      "DomainName": "app.flumenlucidum.com",
+      "HostedZoneId": {
+       "Ref": "HostedZoneDB99F866"
+      }
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "CantoneseWordGameStack/Certificate"
+     }
+    ],
+    "ValidationMethod": "DNS"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CantoneseWordGameStack/Certificate/Resource"
    }
   },
   "FrontendSecurityGroup69AD9D5B": {
@@ -1164,6 +1323,20 @@
       "FromPort": 80,
       "IpProtocol": "tcp",
       "ToPort": 80
+     },
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow HTTPS access from internet",
+      "FromPort": 443,
+      "IpProtocol": "tcp",
+      "ToPort": 443
+     },
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow HTTPS backend access from internet",
+      "FromPort": 8443,
+      "IpProtocol": "tcp",
+      "ToPort": 8443
      }
     ],
     "VpcId": {
@@ -1226,21 +1399,7 @@
       "Environment": [
        {
         "Name": "VITE_API_BASE_URL",
-        "Value": {
-         "Fn::Join": [
-          "",
-          [
-           "http://",
-           {
-            "Fn::GetAtt": [
-             "ALBAEE750D2",
-             "DNSName"
-            ]
-           },
-           ":8000/api"
-          ]
-         ]
-        }
+        "Value": "https://app.flumenlucidum.com:8443/api"
        }
       ],
       "Essential": true,
@@ -1402,7 +1561,7 @@
     }
    },
    "DependsOn": [
-    "ALBBackendListener545F3CFF",
+    "ALBBackendHTTPSListener37AAB8F4",
     "BackendTaskRoleDefaultPolicyD82ED08E",
     "BackendTaskRole65DD5890"
    ],
@@ -1460,7 +1619,7 @@
     }
    },
    "DependsOn": [
-    "ALBFrontendListenerD31C403C",
+    "ALBFrontendHTTPSListener23DCBED5",
     "FrontendTaskDefinitionTaskRole0DD17CB3"
    ],
    "Metadata": {
@@ -1618,7 +1777,7 @@
             "Fn::Split": [
              "/",
              {
-              "Ref": "ALBBackendListener545F3CFF"
+              "Ref": "ALBBackendHTTPSListener37AAB8F4"
              }
             ]
            }
@@ -1632,7 +1791,7 @@
             "Fn::Split": [
              "/",
              {
-              "Ref": "ALBBackendListener545F3CFF"
+              "Ref": "ALBBackendHTTPSListener37AAB8F4"
              }
             ]
            }
@@ -1646,7 +1805,7 @@
             "Fn::Split": [
              "/",
              {
-              "Ref": "ALBBackendListener545F3CFF"
+              "Ref": "ALBBackendHTTPSListener37AAB8F4"
              }
             ]
            }
@@ -1696,7 +1855,7 @@
             "Fn::Split": [
              "/",
              {
-              "Ref": "ALBFrontendListenerD31C403C"
+              "Ref": "ALBFrontendHTTPSListener23DCBED5"
              }
             ]
            }
@@ -1710,7 +1869,7 @@
             "Fn::Split": [
              "/",
              {
-              "Ref": "ALBFrontendListenerD31C403C"
+              "Ref": "ALBFrontendHTTPSListener23DCBED5"
              }
             ]
            }
@@ -1724,7 +1883,7 @@
             "Fn::Split": [
              "/",
              {
-              "Ref": "ALBFrontendListenerD31C403C"
+              "Ref": "ALBFrontendHTTPSListener23DCBED5"
              }
             ]
            }
@@ -1909,7 +2068,7 @@
           "Fn::Split": [
            "/",
            {
-            "Ref": "ALBBackendListener545F3CFF"
+            "Ref": "ALBBackendHTTPSListener37AAB8F4"
            }
           ]
          }
@@ -1923,7 +2082,7 @@
           "Fn::Split": [
            "/",
            {
-            "Ref": "ALBBackendListener545F3CFF"
+            "Ref": "ALBBackendHTTPSListener37AAB8F4"
            }
           ]
          }
@@ -1937,7 +2096,7 @@
           "Fn::Split": [
            "/",
            {
-            "Ref": "ALBBackendListener545F3CFF"
+            "Ref": "ALBBackendHTTPSListener37AAB8F4"
            }
           ]
          }
@@ -1963,7 +2122,7 @@
   "CDKMetadata": {
    "Type": "AWS::CDK::Metadata",
    "Properties": {
-    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31S227bMAz9lr4rHpr2B5K4KwIUm+EUfR1ohXW02JIhUgmCwP8+2vJtHbAnHR5S5OFlnayfnpPHB7jSSh/Pq8oUyf3AoM9KqF931Ovk/tFotfu0H9lOZaGojD6EwiJ33IxyFxjfoahw5mduQ+S0ATbOTsEdeNln3fMD+BUYr3BTmTcXgXPivWX0gseAqGSwNixaTzVaVgfUwRu+vXoXml7Df4m9LT0S/cO/9HSrUPskx8aRYedvWyBUJBwy1WChRC9z6u0hQ4fi8w6+RF4omwK+elrljyR5+l4nmel2SaTAUEj1vSUGq3Ei5urpdnR2siXhrgokQ+t8I/wupaFbBp1T/DTWjKv4yjjLYCz6BTf8PaC/GB3XG2GrDNTJPXdx6f2bOTmQfksRtapypWh6c+XU4YhFbgXERlcOjgVU0oKx5UVObtM08rm/lzfxbXtf7OgvexlnpFE7xIx44Y/DnzQszFYR1d3Ze6megYcah+lNRqtEYzhegfVJ1FXg684fQQp0Khz4Y7+M0WhblSO54OPIfgZugmw8u/HJ2W9PyeNzsn74TcasfLBsakzy+P4BEZKUd5QDAAA="
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/31S227bMAz9lr4rHpp0H5BL1wUoNsMp+rCXgZYZR4stGRKVIDD876Ol+NIO2JMODyny8LJMlqun5PEBrm4hi/OiUnnSHgjkWTD1u0W5TNr3RortUb+nW5H6vFLy4HON1HMTyownfIO8womfuLVzRiogZfQY3IPnfdo/P4BegPAKN5FadWE4Jd5rQst4CIhK7taaWOupRk3igNJbRbcXa3wTNPyX2OvSonP/8M+B7gRKm2TYGKfI2NsGHArHHJKrQUOJlucU7HuGHsXnDWyJNFM2Bnz2dMIWjvOEXkeZu82c2AFBztX32hFoiSMxVd9tBmcvmxNuK+94aL1vgN+4NPTLcOcdHpVWwyo+M0YTKI12xt3/HtBelIzrjbATCuqkzUxcenhTwwcSthRRJypTsqZXU44dDpjlVuBIycpAkUPFLShdXvjk1k3Dn8O9vLJvE3yxow/2PE5xo/oeM+CZPw5/1DAzO+Fc3Z+95eopWKjxPr3R4E31J/t1lbTfDecufhkdep5Z6wylsUWYREAH5A2zSlLHXgOOh7OduLCjyeT4yvjiCiRPPIUKbN1HRLADd8oNxBKj0XUiQ2e8jav56anxXDe90cnoL6vk8SlZPvxxSi2s16RqTLL4/gUTIu4k/AMAAA=="
    },
    "Metadata": {
     "aws:cdk:path": "CantoneseWordGameStack/CDKMetadata/Default"
@@ -2042,6 +2201,30 @@
        "Ref": "MonitoringDashboard96464763"
       }
      ]
+    ]
+   }
+  },
+  "DomainName": {
+   "Description": "Full domain name for the application",
+   "Value": "app.flumenlucidum.com"
+  },
+  "HostedZoneId": {
+   "Description": "Route 53 Hosted Zone ID",
+   "Value": {
+    "Ref": "HostedZoneDB99F866"
+   }
+  },
+  "Nameservers": {
+   "Description": "Nameservers to configure at domain registrar",
+   "Value": {
+    "Fn::Join": [
+     ", ",
+     {
+      "Fn::GetAtt": [
+       "HostedZoneDB99F866",
+       "NameServers"
+      ]
+     }
     ]
    }
   }
