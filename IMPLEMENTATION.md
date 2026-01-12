@@ -275,4 +275,100 @@ The original high-level requirements in `project_requirements.md` and `project_i
 
 For the exhaustive requirement list, continue to use `project_requirements.md` as the canonical reference; this document explains how those requirements are realized in code.
 
+---
+
+## Recent Infrastructure Improvements
+
+### Custom Domain & HTTPS Support
+
+The infrastructure has been enhanced to support custom domains with automatic HTTPS:
+
+**Route 53 Integration:**
+- Hosted zone creation for the root domain (e.g., `flumenlucidum.com`)
+- Automatic A record creation for the application subdomain (e.g., `app.flumenlucidum.com`)
+- DNS records output to `deployment-outputs.json` for easy registrar configuration
+
+**ACM Certificate Management:**
+- Automatic SSL certificate creation via AWS Certificate Manager
+- DNS-based certificate validation through Route 53
+- Certificate attaches to ALB for HTTPS termination
+
+**Load Balancer Configuration:**
+- HTTPS listeners on ports 443 (frontend) and 8443 (backend API)
+- HTTP to HTTPS automatic redirects (ports 80 → 443, 8000 → 8443)
+- Path-based routing:
+  - `/api/*` routes to backend service
+  - All other paths route to frontend service
+
+**CORS Configuration:**
+- Updated backend CORS to use HTTPS custom domain URL
+- Environment variable configuration: `CORS_ORIGINS=https://app.flumenlucidum.com`
+- Flexible parsing supports both string and list formats
+
+### Deployment Enhancements
+
+**Dynamic Frontend Build:**
+- `DEPLOY_NOW.sh` automatically retrieves ALB DNS during deployment
+- Frontend build uses `VITE_API_BASE_URL` build argument for API configuration
+- No hardcoded URLs in frontend build
+
+**Backend Docker Improvements:**
+- Fixed BuildKit cache mount conflicts for virtual environment
+- Separate copy and ownership change for `.venv` directory
+- Improved compatibility with BuildKit's cache mounts
+
+**Database Migration Fixes:**
+- Fixed Alembic configuration for special characters in database passwords
+- Direct URL usage in migration functions to avoid interpolation errors
+- Improved compatibility with complex password strings
+
+### Admin User Management
+
+**New Scripts:**
+- `create_admin.py`: Interactive admin user creation script
+- `create_admin_simple.py`: Simplified admin creation
+- `create_admin_lambda.py`: Lambda function format for AWS execution
+- `setup_demo.py`: Demo data setup script
+
+**Database Migration:**
+- `001_create_admin_and_demo_deck.py`: Alembic migration for initial admin and demo deck
+- Automatically creates default admin user and sample content
+
+### Configuration Management
+
+**Environment Configuration:**
+- `backend/app/core/config.py` enhanced with flexible CORS parsing
+- Support for wildcard CORS (`*`), JSON arrays, and comma-separated values
+- Improved error handling for malformed configuration
+
+**CDK Stack Outputs:**
+- Domain name and nameserver information
+- Hosted zone ID for Route 53 management
+- SSM Parameter Store for ALB DNS lookup
+- All outputs saved to `deployment-outputs.json`
+
+### Security Improvements
+
+**Package Version Constraints:**
+- Pinned `bcrypt` to `<5.0.0` for compatibility
+- Prevents breaking changes from major version updates
+
+**Secrets Management:**
+- Production secrets stored in AWS Secrets Manager
+- Local development uses environment variables or `.env` files
+- No hardcoded credentials in source code
+
+### Monitoring & Observability
+
+**CloudWatch Dashboard:**
+- Pre-configured dashboard for ECS, RDS, and ALB metrics
+- URL available in stack outputs
+- Automatic alarm creation for critical metrics
+
+**Logging:**
+- Centralized logging via CloudWatch Logs
+- Separate log groups for frontend and backend services
+- Log retention policies configured
+
+---
 

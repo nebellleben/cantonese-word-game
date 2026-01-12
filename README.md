@@ -4,11 +4,12 @@ A web-based educational game designed for primary school students in Hong Kong, 
 
 ## 🎉 Live Production Demo
 
-**The application is deployed and accessible on AWS!**
+**The application is deployed and accessible on AWS with HTTPS support!**
 
-- **Frontend:** http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com
-- **API Docs:** http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com:8000/docs
-- **Backend API:** http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com:8000/api
+### Production URLs
+- **Frontend:** https://app.flumenlucidum.com
+- **Backend API:** https://app.flumenlucidum.com/api
+- **API Docs:** https://app.flumenlucidum.com/api/docs
 
 **Status:** ✅ All services running and healthy (Region: us-east-1)
 
@@ -17,7 +18,12 @@ A web-based educational game designed for primary school students in Hong Kong, 
 - Teacher: `teacher@example.com` / `teacher123`
 - Student: `student@example.com` / `student123`
 
-For detailed access information, see [`PRODUCTION_ACCESS.md`](PRODUCTION_ACCESS.md).
+### Infrastructure Details
+- **Custom Domain:** app.flumenlucidum.com
+- **SSL Certificate:** ACM certificate with automatic DNS validation
+- **DNS:** Route 53 hosted zone (flumenlucidum.com)
+- **Load Balancer:** Application Load Balancer with HTTPS listeners
+- **CDK Outputs:** See `deployment-outputs.json` for complete infrastructure details
 
 ---
 
@@ -557,10 +563,13 @@ The application is configured for deployment to AWS using ECS Fargate, RDS Postg
 The deployment uses:
 - **ECS Fargate**: Serverless container hosting for frontend and backend
 - **RDS PostgreSQL**: Managed database service
-- **Application Load Balancer**: Traffic distribution and health checks
+- **Application Load Balancer**: Traffic distribution and health checks with HTTPS support
+- **Route 53**: DNS hosting and custom domain management (app.flumenlucidum.com)
+- **ACM (Certificate Manager)**: SSL/TLS certificates for HTTPS
 - **ECR**: Container image registry
 - **CloudWatch**: Monitoring and logging
 - **Secrets Manager**: Secure secret storage
+- **SSM Parameter Store**: Configuration parameters
 
 ### Prerequisites
 
@@ -598,11 +607,14 @@ This creates:
 - RDS PostgreSQL instance
 - ECS Fargate cluster
 - ECS services for frontend and backend
-- Application Load Balancer
+- Application Load Balancer with HTTPS listeners
+- Route 53 hosted zone for custom domain
+- ACM SSL certificate with DNS validation
 - ECR repositories
 - Security groups and IAM roles
 - CloudWatch log groups and dashboard
 - Secrets Manager secret
+- SSM Parameter Store entries
 
 ### Configure Secrets
 
@@ -614,7 +626,7 @@ aws secretsmanager put-secret-value \
   --secret-string '{
     "SECRET_KEY": "your-generated-secret-key",
     "DATABASE_URL": "postgresql://username:password@rds-endpoint:5432/cantonese_game",
-    "CORS_ORIGINS": "[\"https://your-domain.com\"]"
+    "CORS_ORIGINS": "https://app.flumenlucidum.com"
   }'
 ```
 
@@ -648,18 +660,29 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 
 ### Accessing the Application
 
-After deployment, get the Load Balancer DNS:
+After deployment, the application will be accessible via your custom domain. To find the Load Balancer DNS or other outputs:
 
 ```bash
-aws elbv2 describe-load-balancers \
-  --query 'LoadBalancers[?LoadBalancerName==`cantonese-word-game-alb`].DNSName' \
-  --output text
+# View all stack outputs
+cd infrastructure/cdk
+cdk deploy CantoneseWordGameStack --outputs-file deployment-outputs.json
+
+# Or get specific outputs
+aws cloudformation describe-stacks \
+  --stack-name CantoneseWordGameStack \
+  --query 'Stacks[0].Outputs'
 ```
 
-**Current Production URLs:**
-- **Frontend:** `http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com`
-- **Backend API:** `http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com:8000/api`
-- **API Documentation:** `http://cantonese-word-game-alb-1303843855.us-east-1.elb.amazonaws.com:8000/docs`
+**Production URLs:**
+- **Frontend:** https://app.flumenlucidum.com
+- **Backend API:** https://app.flumenlucidum.com/api
+- **API Documentation:** https://app.flumenlucidum.com/api/docs
+
+**Note:** The deployment script `DEPLOY_NOW.sh` automatically:
+1. Retrieves the ALB DNS name dynamically
+2. Builds the frontend with the correct API URL
+3. Pushes images to ECR
+4. Updates ECS services
 
 ### Monitoring
 
