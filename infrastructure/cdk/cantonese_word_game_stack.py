@@ -370,10 +370,8 @@ class CantoneseWordGameStack(Stack):
         https_listener.add_action(
             "BackendAPIRule",
             priority=10,
-            conditions=[elbv2.ListenerRuleCondition.path_patterns("/api/*")],
-            action=elbv2.ListenerAction.forward([elbv2.TargetGroup(
-                backend_target_group,
-            )]),
+            conditions=[elbv2.ListenerCondition.path_patterns(["/api/*"])],
+            action=elbv2.ListenerAction.forward([backend_target_group]),
         )
 
         # HTTP to HTTPS Redirect
