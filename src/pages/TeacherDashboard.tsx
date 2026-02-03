@@ -68,10 +68,10 @@ const TeacherDashboard: React.FC = () => {
   return (
     <div className="teacher-dashboard">
       <div className="header">
-        <h1>👨‍🏫 {t('teacherDashboard')}</h1>
+        <h1>{t('teacherDashboard')}</h1>
         <div className="header-actions">
           <LanguageSwitcher />
-          <span className="user-info">{t('welcome')}, {user?.username}! 👋</span>
+          <span className="user-info">{t('welcome')}, {user?.username}</span>
           <button onClick={handleLogout} className="btn btn-secondary">
             {t('logout')}
           </button>
@@ -84,20 +84,20 @@ const TeacherDashboard: React.FC = () => {
             className={`tab ${activeTab === 'students' ? 'active' : ''}`}
             onClick={() => setActiveTab('students')}
           >
-            📊 {t('studentStatistics')}
+            {t('studentStatistics')}
           </button>
           <button
             className={`tab ${activeTab === 'words' ? 'active' : ''}`}
             onClick={() => setActiveTab('words')}
           >
-            📝 {t('wordErrorRatios')}
+            {t('wordErrorRatios')}
           </button>
         </div>
 
         {activeTab === 'students' && (
           <>
             <div className="card">
-              <h2>👥 {t('myStudents')}</h2>
+              <h2>{t('myStudents')}</h2>
               {students.length > 0 ? (
                 <>
                   <div className="form-group">
@@ -146,7 +146,7 @@ const TeacherDashboard: React.FC = () => {
                               <XAxis dataKey="date" />
                               <YAxis />
                               <Tooltip />
-                              <Bar dataKey="score" fill="#ff6b9d" />
+                              <Bar dataKey="score" fill="#0f766e" />
                             </BarChart>
                           </ResponsiveContainer>
                         </div>
@@ -163,7 +163,7 @@ const TeacherDashboard: React.FC = () => {
 
         {activeTab === 'words' && (
           <div className="card">
-            <h2>📝 {t('wordErrorRatios')}</h2>
+            <h2>{t('wordErrorRatios')}</h2>
             <p>{t('wordsSortedByError')}</p>
             {wordErrorRatios.length > 0 ? (
               <div className="word-error-list">
@@ -196,4 +196,3 @@ const TeacherDashboard: React.FC = () => {
 };
 
 export default TeacherDashboard;
-

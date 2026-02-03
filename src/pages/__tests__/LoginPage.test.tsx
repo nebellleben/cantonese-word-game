@@ -1,16 +1,31 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../../contexts/AuthContext';
 import LoginPage from '../LoginPage';
+import { LanguageProvider } from '../../contexts/LanguageContext';
+
+vi.mock('../../services/api', () => ({
+  apiClient: {
+    login: vi.fn(),
+    register: vi.fn(),
+  },
+}));
+
+import { apiClient } from '../../services/api';
+
+const mockedApiClient = apiClient as unknown as {
+  login: ReturnType<typeof vi.fn>;
+  register: ReturnType<typeof vi.fn>;
+};
 
 const renderWithProviders = (ui: React.ReactElement) => {
   return render(
     <BrowserRouter>
-      <AuthProvider>
-        {ui}
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>{ui}</AuthProvider>
+      </LanguageProvider>
     </BrowserRouter>
   );
 };
@@ -26,6 +41,7 @@ describe('LoginPage', () => {
 
   it('should show error on invalid login', async () => {
     const user = userEvent.setup();
+    mockedApiClient.login.mockRejectedValueOnce(new Error('Invalid credentials'));
     renderWithProviders(<LoginPage />);
 
     const usernameInput = screen.getByLabelText(/username/i);
@@ -49,4 +65,3 @@ describe('LoginPage', () => {
     expect(registerLink).toHaveAttribute('href', '/register');
   });
 });
-

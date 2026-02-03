@@ -55,10 +55,10 @@ const StudentDashboard: React.FC = () => {
   return (
     <div className="student-dashboard">
       <div className="header">
-        <h1>🎮 {t('studentDashboard')}</h1>
+        <h1>{t('studentDashboard')}</h1>
         <div className="header-actions">
           <LanguageSwitcher />
-          <span className="user-info">{t('welcome')}, {user?.username}! 👋</span>
+          <span className="user-info">{t('welcome')}, {user?.username}</span>
           <button onClick={handleLogout} className="btn btn-secondary">
             {t('logout')}
           </button>
@@ -67,7 +67,7 @@ const StudentDashboard: React.FC = () => {
 
       <div className="container">
         <div className="card">
-          <h2>🎯 {t('startGame')}</h2>
+          <h2>{t('startGame')}</h2>
           <p>{t('chooseDeck')}</p>
 
           <div className="form-group">
@@ -96,18 +96,18 @@ const StudentDashboard: React.FC = () => {
             className="btn btn-primary btn-large"
             disabled={!selectedDeck}
           >
-            🚀 {t('startGame')}
+            {t('startGame')}
           </button>
         </div>
 
         <div className="card">
-          <h2>📊 {t('viewStatistics')}</h2>
+          <h2>{t('viewStatistics')}</h2>
           <p>{t('reviewProgress')}</p>
           <button
             onClick={() => navigate('/student/statistics')}
             className="btn btn-secondary btn-large"
           >
-            📈 {t('viewStatistics')}
+            {t('viewStatistics')}
           </button>
         </div>
       </div>
@@ -116,4 +116,3 @@ const StudentDashboard: React.FC = () => {
 };
 
 export default StudentDashboard;
-

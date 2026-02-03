@@ -1,10 +1,88 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { apiClient } from '../api';
+
+const mockPost = vi.hoisted(() => vi.fn());
+const mockGet = vi.hoisted(() => vi.fn());
+
+vi.mock('axios', () => ({
+  default: {
+    create: () => ({
+      post: mockPost,
+      get: mockGet,
+      interceptors: {
+        request: { use: vi.fn() },
+        response: { use: vi.fn() },
+      },
+    }),
+  },
+  AxiosError: class AxiosError extends Error {},
+}));
 
 describe('API Client', () => {
   beforeEach(() => {
     // Clear localStorage before each test
     localStorage.clear();
+    mockPost.mockReset();
+    mockGet.mockReset();
+
+    const registeredUsers = new Set<string>();
+
+    mockPost.mockImplementation((url: string, body?: any) => {
+      if (url === '/auth/login') {
+        if (body?.username === 'student1' && body?.password === 'password123') {
+          return Promise.resolve({
+            data: { token: 'token-1', user: { id: 'u1', username: 'student1', role: 'student' } },
+          });
+        }
+        return Promise.reject(new Error('Invalid credentials'));
+      }
+
+      if (url === '/auth/register') {
+        if (registeredUsers.has(body?.username)) {
+          return Promise.reject(new Error('Duplicate username'));
+        }
+        registeredUsers.add(body?.username);
+        return Promise.resolve({
+          data: {
+            token: 'token-2',
+            user: { id: 'u2', username: body?.username, role: body?.role ?? 'student' },
+          },
+        });
+      }
+
+      if (url === '/games/start') {
+        return Promise.resolve({
+          data: {
+            id: 'session-1',
+            words: [{ wordId: 'word-1', text: '你好', jyutping: 'nei5 hou2' }],
+          },
+        });
+      }
+
+      if (url === '/games/pronunciation') {
+        return Promise.resolve({
+          data: { isCorrect: true },
+        });
+      }
+
+      return Promise.reject(new Error(`Unhandled POST ${url}`));
+    });
+
+    mockGet.mockImplementation((url: string) => {
+      if (url === '/decks') {
+        return Promise.resolve({
+          data: [{ id: 'deck-1', name: 'Basics', wordCount: 2 }],
+        });
+      }
+
+      if (url.startsWith('/decks/') && url.endsWith('/words')) {
+        return Promise.resolve({
+          data: [{ id: 'word-1', text: '你好' }],
+        });
+      }
+
+      return Promise.reject(new Error(`Unhandled GET ${url}`));
+    });
   });
 
   describe('Authentication', () => {
@@ -108,4 +186,3 @@ describe('API Client', () => {
     });
   });
 });
-

@@ -3,20 +3,16 @@ Integration tests for backend-frontend communication.
 Tests that the backend API matches what the frontend expects.
 """
 import pytest
-from fastapi.testclient import TestClient
-from app.main import app
-
-client = TestClient(app)
 
 
-def test_backend_health():
+def test_backend_health(client):
     """Test backend health endpoint."""
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "healthy"}
 
 
-def test_api_root():
+def test_api_root(client):
     """Test API root endpoint."""
     response = client.get("/")
     assert response.status_code == 200
@@ -25,7 +21,7 @@ def test_api_root():
     assert "version" in data
 
 
-def test_cors_headers():
+def test_cors_headers(client):
     """Test that CORS headers are set correctly."""
     response = client.options(
         "/api/decks",
@@ -38,7 +34,7 @@ def test_cors_headers():
     assert response.status_code in [200, 204, 405]
 
 
-def test_login_flow():
+def test_login_flow(client):
     """Test complete login flow that frontend uses."""
     # Login with default admin
     response = client.post(
@@ -61,7 +57,7 @@ def test_login_flow():
     assert isinstance(response.json(), list)
 
 
-def test_register_and_login():
+def test_register_and_login(client):
     """Test registration then login flow."""
     # Register new user
     response = client.post(
@@ -83,13 +79,13 @@ def test_register_and_login():
     assert response.json()["user"]["username"] == "testuser"
 
 
-def test_get_decks_requires_auth():
+def test_get_decks_requires_auth(client):
     """Test that decks endpoint requires authentication."""
     response = client.get("/api/decks")
     assert response.status_code == 401 or response.status_code == 403
 
 
-def test_game_flow():
+def test_game_flow(client):
     """Test complete game flow."""
     # Login
     login_response = client.post(
@@ -149,7 +145,7 @@ def test_game_flow():
     assert ended_session["score"] is not None
 
 
-def test_statistics_endpoint():
+def test_statistics_endpoint(client):
     """Test statistics endpoint."""
     # Login
     login_response = client.post(
@@ -172,7 +168,7 @@ def test_statistics_endpoint():
     assert "topWrongWords" in stats
 
 
-def test_admin_endpoints():
+def test_admin_endpoints(client):
     """Test admin endpoints."""
     # Login as admin
     login_response = client.post(
@@ -218,7 +214,7 @@ def test_admin_endpoints():
     assert delete_deck_response.status_code == 204
 
 
-def test_api_response_format():
+def test_api_response_format(client):
     """Test that API responses match frontend expectations."""
     # Login
     login_response = client.post(
@@ -249,4 +245,3 @@ def test_api_response_format():
             # Accept both camelCase and snake_case
             assert "deckId" in word or "deck_id" in word
             assert "createdAt" in word or "created_at" in word
-

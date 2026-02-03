@@ -1,7 +1,21 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider, useAuth } from '../AuthContext';
+
+vi.mock('../../services/api', () => ({
+  apiClient: {
+    login: vi.fn(),
+    register: vi.fn(),
+  },
+}));
+
+import { apiClient } from '../../services/api';
+
+const mockedApiClient = apiClient as unknown as {
+  login: ReturnType<typeof vi.fn>;
+  register: ReturnType<typeof vi.fn>;
+};
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <BrowserRouter>
@@ -14,15 +28,22 @@ describe('AuthContext', () => {
     localStorage.clear();
   });
 
-  it('should provide auth context', () => {
+  it('should provide auth context', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
-    
+
     expect(result.current).toBeDefined();
     expect(result.current.user).toBeNull();
-    expect(result.current.loading).toBe(true);
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
   });
 
   it('should login successfully', async () => {
+    mockedApiClient.login.mockResolvedValueOnce({
+      token: 'test-token',
+      user: { id: 'u1', username: 'student1', role: 'student' },
+    });
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     await waitFor(() => {
@@ -41,6 +62,10 @@ describe('AuthContext', () => {
   });
 
   it('should register new user', async () => {
+    mockedApiClient.register.mockResolvedValueOnce({
+      token: 'test-token',
+      user: { id: 'u2', username: 'newuser', role: 'student' },
+    });
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     await waitFor(() => {
@@ -60,6 +85,10 @@ describe('AuthContext', () => {
   });
 
   it('should logout', async () => {
+    mockedApiClient.login.mockResolvedValueOnce({
+      token: 'test-token',
+      user: { id: 'u1', username: 'student1', role: 'student' },
+    });
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     await waitFor(() => {
@@ -82,4 +111,3 @@ describe('AuthContext', () => {
     expect(result.current.user).toBeNull();
   });
 });
-

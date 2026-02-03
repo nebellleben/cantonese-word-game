@@ -44,7 +44,7 @@ const RegisterPage: React.FC = () => {
       </div>
       <div className="register-container">
         <div className="register-card">
-          <div className="welcome-emoji">🎉</div>
+          <div className="brand-mark" aria-hidden="true">CW</div>
           <h1>{t('createAccount')}</h1>
           <p className="subtitle">{t('joinGame')}</p>
 
@@ -113,4 +113,3 @@ const RegisterPage: React.FC = () => {
 };
 
 export default RegisterPage;
-

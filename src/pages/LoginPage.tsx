@@ -36,7 +36,7 @@ const LoginPage: React.FC = () => {
       </div>
       <div className="login-container">
         <div className="login-card">
-          <div className="welcome-emoji">👋</div>
+          <div className="brand-mark" aria-hidden="true">CW</div>
           <h1>{t('welcomeBack')}</h1>
           <p className="subtitle">{t('signInToContinue')}</p>
 
@@ -82,4 +82,3 @@ const LoginPage: React.FC = () => {
 };
 
 export default LoginPage;
-

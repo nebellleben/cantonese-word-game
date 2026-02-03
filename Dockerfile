@@ -9,7 +9,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci
 
 # Copy source code
 COPY . .
@@ -24,8 +24,9 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy nginx configuration template (envsubst will inject PORT)
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+ENV PORT=80
 
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
@@ -35,8 +36,7 @@ EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
+    CMD wget --quiet --tries=1 --spider http://localhost:${PORT}/health || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
-

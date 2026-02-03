@@ -22,6 +22,10 @@ htmlcov
 .tox
 .hypothesis
 *.cover
+tests
+tests_integration
+pytest.ini
+test_db_connection.py
 
 # IDE
 .vscode
@@ -85,4 +89,3 @@ docker-compose*.yml
 # Infrastructure
 ../infrastructure
 ../scripts
-

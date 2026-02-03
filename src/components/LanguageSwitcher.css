@@ -1,45 +1,40 @@
 .language-switcher {
-  display: flex;
-  gap: 0.5rem;
+  display: inline-flex;
+  gap: 0.25rem;
   align-items: center;
   background: rgba(255, 255, 255, 0.9);
-  padding: 0.5rem;
-  border-radius: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 0.3rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
 }
 
 .lang-btn {
-  padding: 0.5rem 1rem;
-  border: 2px solid transparent;
-  border-radius: 15px;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
   background: transparent;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  color: #666;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  color: var(--ink-500);
 }
 
 .lang-btn:hover {
-  background: rgba(255, 182, 193, 0.3);
-  transform: scale(1.05);
+  background: rgba(15, 118, 110, 0.08);
+  color: var(--ink-700);
 }
 
 .lang-btn.active {
-  background: linear-gradient(135deg, #ff6b9d 0%, #c44569 100%);
+  background: var(--accent);
   color: white;
-  border-color: #ff6b9d;
-  box-shadow: 0 2px 8px rgba(255, 107, 157, 0.3);
+  border-color: var(--accent-strong);
 }
 
 @media (max-width: 768px) {
   .lang-btn {
-    padding: 0.4rem 0.8rem;
+    padding: 0.35rem 0.7rem;
     font-size: 0.8rem;
   }
 }
-
-

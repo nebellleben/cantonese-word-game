@@ -24,6 +24,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    command: sh -c "python -m alembic upgrade head && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
     container_name: cantonese-backend
     environment:
       DATABASE_URL: postgresql://cantonese_user:cantonese_pass@postgres:5432/cantonese_game
@@ -73,4 +74,3 @@ volumes:
 networks:
   cantonese-network:
     driver: bridge
-

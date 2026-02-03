@@ -70,7 +70,7 @@ const StatisticsPage: React.FC = () => {
   return (
     <div className="statistics-page">
       <div className="header">
-        <h1>📊 {t('statistics')}</h1>
+        <h1>{t('statistics')}</h1>
         <div className="header-actions">
           <LanguageSwitcher />
           <button onClick={() => navigate('/student')} className="btn btn-secondary">
@@ -84,7 +84,7 @@ const StatisticsPage: React.FC = () => {
 
       <div className="container">
         <div className="card">
-          <h2>📈 {t('overview')}</h2>
+          <h2>{t('overview')}</h2>
           <div className="stats-grid">
             <div className="stat-card">
               <div className="stat-value">{statistics.totalGames}</div>
@@ -110,7 +110,7 @@ const StatisticsPage: React.FC = () => {
         </div>
 
         <div className="card">
-          <h2>📅 {t('scoreHistory')}</h2>
+          <h2>{t('scoreHistory')}</h2>
           <div className="form-group">
             <label htmlFor="deck-filter">{t('filterByDeck')}</label>
             <select
@@ -134,7 +134,7 @@ const StatisticsPage: React.FC = () => {
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="score" fill="#ff6b9d" />
+                <Bar dataKey="score" fill="#0f766e" />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -143,7 +143,7 @@ const StatisticsPage: React.FC = () => {
         </div>
 
         <div className="card">
-          <h2>⚠️ {t('top20WrongWords')}</h2>
+          <h2>{t('top20WrongWords')}</h2>
           {statistics.topWrongWords.length > 0 ? (
             <div className="wrong-words-list">
               {statistics.topWrongWords
@@ -172,4 +172,3 @@ const StatisticsPage: React.FC = () => {
 };
 
 export default StatisticsPage;
-

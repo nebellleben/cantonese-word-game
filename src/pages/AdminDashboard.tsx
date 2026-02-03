@@ -12,7 +12,7 @@ const AdminDashboard: React.FC = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'words' | 'associations' | 'statistics' | 'passwords'>('words');
-  
+
   // Word management state
   const [decks, setDecks] = useState<Deck[]>([]);
   const [selectedDeckId, setSelectedDeckId] = useState<string>('');
@@ -20,23 +20,23 @@ const AdminDashboard: React.FC = () => {
   const [newDeckName, setNewDeckName] = useState('');
   const [newDeckDescription, setNewDeckDescription] = useState('');
   const [newWordText, setNewWordText] = useState('');
-  
+
   // Association state
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
   const [teachers, setTeachers] = useState<User[]>([]);
   const [associations, setAssociations] = useState<StudentTeacherAssociation[]>([]);
-  
+
   // Statistics state
   const [selectedStudentForStats, setSelectedStudentForStats] = useState<string>('');
   const [studentStats, setStudentStats] = useState<GameStatistics | null>(null);
   const [allStudentsStats, setAllStudentsStats] = useState<GameStatistics | null>(null);
-  
+
   // Password management state
   const [selectedUserForPassword, setSelectedUserForPassword] = useState<string>('');
   const [newPassword, setNewPassword] = useState('');
-  
+
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -85,7 +85,7 @@ const AdminDashboard: React.FC = () => {
       setStudents(studentList);
       setTeachers(teacherList);
       setAssociations(associationList);
-      
+
       if (studentList.length > 0) {
         setSelectedStudentForStats(studentList[0].id);
         setSelectedStudentId(studentList[0].id);
@@ -259,10 +259,10 @@ const AdminDashboard: React.FC = () => {
   return (
     <div className="admin-dashboard">
       <div className="header">
-        <h1>👑 {t('adminDashboard')}</h1>
+        <h1>{t('adminDashboard')}</h1>
         <div className="header-actions">
           <LanguageSwitcher />
-          <span className="user-info">{t('welcome')}, {user?.username}! 👋</span>
+          <span className="user-info">{t('welcome')}, {user?.username}</span>
           <button onClick={handleLogout} className="btn btn-secondary">
             {t('logout')}
           </button>
@@ -281,34 +281,34 @@ const AdminDashboard: React.FC = () => {
             className={`tab ${activeTab === 'words' ? 'active' : ''}`}
             onClick={() => setActiveTab('words')}
           >
-            📝 {t('wordManagement')}
+            {t('wordManagement')}
           </button>
           <button
             className={`tab ${activeTab === 'associations' ? 'active' : ''}`}
             onClick={() => setActiveTab('associations')}
           >
-            👥 {t('studentTeacherAssociation')}
+            {t('studentTeacherAssociation')}
           </button>
           <button
             className={`tab ${activeTab === 'statistics' ? 'active' : ''}`}
             onClick={() => setActiveTab('statistics')}
           >
-            📊 {t('statistics')}
+            {t('statistics')}
           </button>
           <button
             className={`tab ${activeTab === 'passwords' ? 'active' : ''}`}
             onClick={() => setActiveTab('passwords')}
           >
-            🔐 {t('passwordManagement')}
+            {t('passwordManagement')}
           </button>
         </div>
 
         {activeTab === 'words' && (
           <div className="card">
-            <h2>📚 {t('wordDatabaseManagement')}</h2>
+            <h2>{t('wordDatabaseManagement')}</h2>
 
             <div className="section">
-              <h3>✨ {t('createNewDeck')}</h3>
+              <h3>{t('createNewDeck')}</h3>
               <div className="form-group">
                 <label htmlFor="deck-name">{t('deckName')}</label>
                 <input
@@ -335,7 +335,7 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             <div className="section">
-              <h3>📋 {t('manageDecks')}</h3>
+              <h3>{t('manageDecks')}</h3>
               <div className="form-group">
                 <label htmlFor="deck-select">{t('selectDeck')}</label>
                 <select
@@ -363,7 +363,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
 
                   <div className="section">
-                    <h3>📝 {t('wordsInDeck')}</h3>
+                    <h3>{t('wordsInDeck')}</h3>
                     <div className="form-group">
                       <label htmlFor="new-word">{t('addNewWord')}</label>
                       <div className="input-group">
@@ -406,7 +406,7 @@ const AdminDashboard: React.FC = () => {
 
         {activeTab === 'associations' && (
           <div className="card">
-            <h2>👥 {t('associateStudentsWithTeachers')}</h2>
+            <h2>{t('associateStudentsWithTeachers')}</h2>
             <div className="form-group">
               <label htmlFor="student-select">{t('selectStudent')}</label>
               <select
@@ -446,7 +446,7 @@ const AdminDashboard: React.FC = () => {
 
         {activeTab === 'statistics' && (
           <div className="card">
-            <h2>📊 {t('viewStatistics')}</h2>
+            <h2>{t('viewStatistics')}</h2>
             <div className="form-group">
               <label htmlFor="student-stats-select">{t('selectStudent')}</label>
               <select
@@ -464,7 +464,7 @@ const AdminDashboard: React.FC = () => {
 
             {studentStats && (
               <div className="stats-section">
-                <h3>👤 {t('individualStudentStatistics')}</h3>
+                <h3>{t('individualStudentStatistics')}</h3>
                 <div className="stats-grid">
                   <div className="stat-card">
                     <div className="stat-value">{studentStats.totalGames}</div>
@@ -488,7 +488,7 @@ const AdminDashboard: React.FC = () => {
 
             {allStudentsStats && (
               <div className="stats-section">
-                <h3>👥 {t('collectiveStatistics')}</h3>
+                <h3>{t('collectiveStatistics')}</h3>
                 <div className="stats-grid">
                   <div className="stat-card">
                     <div className="stat-value">{allStudentsStats.totalGames}</div>
@@ -510,7 +510,7 @@ const AdminDashboard: React.FC = () => {
 
         {activeTab === 'passwords' && (
           <div className="card">
-            <h2>🔐 {t('passwordManagement')}</h2>
+            <h2>{t('passwordManagement')}</h2>
             <div className="form-group">
               <label htmlFor="user-password-select">{t('selectUser')}</label>
               <select
@@ -547,4 +547,3 @@ const AdminDashboard: React.FC = () => {
 };
 
 export default AdminDashboard;
-

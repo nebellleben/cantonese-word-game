@@ -60,6 +60,31 @@ def test_db_session(test_engine):
     Base.metadata.create_all(bind=test_engine)
 
     session = TestSessionLocal()
+    # Seed baseline data for tests that assume existing content
+    from app.db.models import User, Deck, Word
+    from app.core.security import get_password_hash
+    if not session.query(User).filter(User.username == "admin").first():
+        admin = User(
+            username="admin",
+            password_hash=get_password_hash("cantonese"),
+            role="admin",
+        )
+        session.add(admin)
+
+    if session.query(Deck).count() == 0:
+        deck = Deck(
+            name="Test Deck",
+            description="Seed deck for tests",
+        )
+        session.add(deck)
+        session.flush()
+        word = Word(
+            text="你好",
+            jyutping="nei5 hou2",
+            deck_id=deck.id,
+        )
+        session.add(word)
+    session.commit()
     try:
         yield session
     finally:
@@ -101,6 +126,10 @@ def admin_user(test_db_session):
     """Create a default admin user in the test database."""
     from app.db.models import User
     from app.core.security import get_password_hash
+
+    admin = test_db_session.query(User).filter(User.username == "admin").first()
+    if admin:
+        return admin
 
     admin = User(
         username="admin",
@@ -146,5 +175,4 @@ def teacher_user(client):
     )
     assert response.status_code == 201
     return response.json()["token"], response.json()["user"]
-
 

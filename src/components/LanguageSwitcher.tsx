@@ -6,25 +6,23 @@ const LanguageSwitcher: React.FC = () => {
   const { language, setLanguage } = useLanguage();
 
   return (
-    <div className="language-switcher">
+    <div className="language-switcher" role="group" aria-label="Language selection">
       <button
         className={`lang-btn ${language === 'en' ? 'active' : ''}`}
         onClick={() => setLanguage('en')}
-        aria-label="Switch to English"
+        aria-pressed={language === 'en'}
       >
-        🇬🇧 English
+        English
       </button>
       <button
         className={`lang-btn ${language === 'zh-TW' ? 'active' : ''}`}
         onClick={() => setLanguage('zh-TW')}
-        aria-label="Switch to Traditional Chinese"
+        aria-pressed={language === 'zh-TW'}
       >
-        🇭🇰 繁體中文
+        繁體中文
       </button>
     </div>
   );
 };
 
 export default LanguageSwitcher;
-
-
