@@ -602,6 +602,7 @@ const GamePage: React.FC = () => {
         </button>
         <div className="progress-bar">
           <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+        </div>
         <div className="header-right">
           <button onClick={handleLogout} className="btn btn-secondary btn-logout">
             {t('logout')}
@@ -623,7 +624,7 @@ const GamePage: React.FC = () => {
           </div>
         )}
         <SwipeCard
-          word={currentWord.text}
+          word={currentWord.text || ''}
           onSwipe={handleSwipe}
           onComplete={handleRecord}
           disabled={isRecording || isStarting}

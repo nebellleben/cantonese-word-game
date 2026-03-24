@@ -36,6 +36,14 @@ export interface Deck {
   wordCount: number;
 }
 
+export interface GameWord {
+  wordId: string;
+  text?: string;
+  jyutping?: string;
+  isCorrect?: boolean;
+  responseTime?: number;
+}
+
 export interface StudentTeacherAssociation {
   studentId: string;
   teacherId: string;
@@ -51,13 +59,8 @@ export interface GameSession {
   words: GameWord[];
 }
 
-export interface GameWord {
-  wordId: string;
-  text: string;
+export interface PronunciationResponse {
   jyutping?: string;
-  responseTime?: number;
-  isCorrect?: boolean;
-  timestamp?: string;
 }
 
 export interface GameStatistics {
