@@ -1,132 +1,231 @@
 .teacher-dashboard {
   min-height: 100vh;
+  padding: var(--space-8);
+  max-width: 1000px;
+  margin: 0 auto;
+  animation: slideUp var(--duration-slow) var(--ease-smooth);
+}
+
+.container {
+  margin-top: var(--space-6);
 }
 
 .tabs {
   display: flex;
-  gap: 0.75rem;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid var(--line);
+  gap: var(--space-2);
+  margin-bottom: var(--space-8);
+  border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
 }
 
 .tab {
-  padding: 0.7rem 1.4rem;
+  padding: var(--space-3) var(--space-5);
   border: none;
   background: transparent;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--ink-500);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  color: var(--ink-muted);
   cursor: pointer;
   border-bottom: 2px solid transparent;
-  transition: color 0.2s ease, border-color 0.2s ease;
+  transition: all var(--duration-fast) var(--ease-smooth);
 }
 
 .tab:hover {
-  color: var(--ink-900);
+  color: var(--ink);
 }
 
 .tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+  color: var(--coral);
+  border-bottom-color: var(--coral);
+}
+
+.card {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+}
+
+.card h2 {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-4);
+}
+
+.card p {
+  color: var(--ink-muted);
+  margin-bottom: var(--space-6);
+}
+
+.form-group {
+  margin-bottom: var(--space-4);
+}
+
+.form-group label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--ink-muted);
+  margin-bottom: var(--space-2);
+}
+
+.no-data {
+  text-align: center;
+  color: var(--ink-muted);
+  padding: var(--space-10);
+  background: var(--paper);
+  border-radius: var(--radius-lg);
 }
 
 .student-stats {
-  margin-top: 2rem;
+  margin-top: var(--space-6);
+}
+
+.student-stats h3 {
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-4);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr);
+  gap: var(--space-6);
+  margin-top: var(--space-6);
+}
+
+.stat-card {
+  text-align: center;
+  padding: var(--space-4);
+  background: var(--sand);
+  border-radius: var(--radius-lg);
+}
+
+.stat-card .stat-value {
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  color: var(--coral);
+  margin-bottom: var(--space-2);
+}
+
+.stat-card .stat-label {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
 }
 
 .chart-container {
-  margin-top: 2rem;
+  margin-top: var(--space-8);
 }
 
 .chart-container h4 {
-  margin-bottom: 1rem;
-  color: var(--ink-700);
+  font-size: var(--text-lg);
+    margin-bottom: var(--space-4);
+    color: var(--ink-light);
 }
 
 .word-error-list {
-  margin-top: 1rem;
-  display: grid;
-  gap: 0.75rem;
+  margin-top: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
 }
 
 .word-error-item {
   display: flex;
-  align-items: center;
-  padding: 1rem;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--line);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+    align-items: center;
+    padding: var(--space-4) var(--space-5);
+    background: var(--paper);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+    transition: all var(--duration-fast) var(--ease-smooth);
 }
 
 .word-error-item:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
+    background: var(--sand);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
 }
 
 .word-rank {
-  font-weight: 700;
-  color: var(--ink-500);
-  margin-right: 1rem;
-  min-width: 50px;
-  font-size: 1rem;
+    font-weight: var(--font-semibold);
+    color: var(--ink-muted);
+    margin-right: var(--space-4);
+    min-width: 50px;
+    font-size: var(--text-sm);
 }
 
 .word-text {
-  font-size: 1.6rem;
-  font-weight: 600;
-  color: var(--ink-900);
-  margin-right: 1rem;
-  min-width: 100px;
-  font-family: 'Fraunces', 'Noto Sans TC', serif;
+    font-family: var(--font-chinese);
+    font-size: var(--text-2xl);
+    font-weight: var(--font-semibold);
+    color: var(--ink);
+    margin-right: var(--space-4);
+    min-width: 100px;
 }
 
 .error-ratio {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
 }
 
 .ratio-bar {
-  flex: 1;
-  height: 10px;
-  background: #e6e1d9;
-  border-radius: 999px;
-  overflow: hidden;
+    flex: 1;
+    height: 10px;
+    background: var(--sand);
+    border-radius: var(--radius-full);
+    overflow: hidden;
 }
 
 .ratio-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #0f766e 0%, #4da3a1 100%);
-  transition: width 0.3s ease;
+    height: 100%;
+    background: linear-gradient(90deg, var(--coral) 0%, var(--coral-soft) 100%);
+    border-radius: var(--radius-full);
+    transition: width var(--duration-normal) var(--ease-smooth);
 }
 
 .ratio-text {
-  font-size: 0.85rem;
-  color: var(--ink-500);
-  min-width: 120px;
-  text-align: right;
+    font-size: var(--text-sm);
+    color: var(--ink-muted);
+    min-width: 120px;
+    text-align: right;
 }
 
 @media (max-width: 768px) {
-  .tabs {
-    flex-direction: column;
-  }
-
-  .word-error-item {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .error-ratio {
-    width: 100%;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .ratio-text {
-    text-align: left;
-  }
+    .teacher-dashboard {
+        padding: var(--space-4);
+    }
+    
+    .tabs {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .tab {
+        border-bottom: none;
+        border-left: 2px solid transparent;
+    }
+    
+    .tab.active {
+        border-bottom-color: transparent;
+        border-left-color: var(--coral);
+    }
+    
+    .word-error-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3);
+    }
+    
+    .error-ratio {
+        width: 100%;
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+    
+    .ratio-text {
+        text-align: left;
+    }
 }

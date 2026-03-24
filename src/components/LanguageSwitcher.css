@@ -1,40 +1,36 @@
 .language-switcher {
-  display: inline-flex;
-  gap: 0.25rem;
+  display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 0.3rem;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow-sm);
+  gap: var(--space-2);
+  background: var(--paper);
+  padding: var(--space-1);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
 }
 
 .lang-btn {
-  padding: 0.4rem 0.9rem;
-  border: 1px solid transparent;
-  border-radius: 999px;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--ink-muted);
   background: transparent;
-  font-size: 0.85rem;
-  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-full);
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-  color: var(--ink-500);
+  transition: all var(--duration-fast) var(--ease-smooth);
 }
 
 .lang-btn:hover {
-  background: rgba(15, 118, 110, 0.08);
-  color: var(--ink-700);
+  color: var(--ink);
 }
 
 .lang-btn.active {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent-strong);
+  background: white;
+  color: var(--ink);
+  box-shadow: var(--shadow-xs);
 }
 
-@media (max-width: 768px) {
-  .lang-btn {
-    padding: 0.35rem 0.7rem;
-    font-size: 0.8rem;
-  }
+.lang-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }

@@ -1,17 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { apiClient } from '../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { Student, WrongWord, GameStatistics } from '../types';
-import LanguageSwitcher from '../components/LanguageSwitcher';
+import Header from '../components/Header';
 import './TeacherDashboard.css';
 
 const TeacherDashboard: React.FC = () => {
-  const { user, logout } = useAuth();
   const { t } = useLanguage();
-  const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [studentStats, setStudentStats] = useState<GameStatistics | null>(null);
@@ -56,27 +52,13 @@ const TeacherDashboard: React.FC = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
-
   if (loading) {
     return <div className="loading">{t('loading')}</div>;
   }
 
   return (
     <div className="teacher-dashboard">
-      <div className="header">
-        <h1>{t('teacherDashboard')}</h1>
-        <div className="header-actions">
-          <LanguageSwitcher />
-          <span className="user-info">{t('welcome')}, {user?.username}</span>
-          <button onClick={handleLogout} className="btn btn-secondary">
-            {t('logout')}
-          </button>
-        </div>
-      </div>
+      <Header title={t('teacherDashboard')} />
 
       <div className="container">
         <div className="tabs">

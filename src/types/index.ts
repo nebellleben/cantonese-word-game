@@ -54,6 +54,7 @@ export interface GameSession {
 export interface GameWord {
   wordId: string;
   text: string;
+  jyutping?: string;
   responseTime?: number;
   isCorrect?: boolean;
   timestamp?: string;

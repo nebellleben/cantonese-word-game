@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { apiClient } from '../services/api';
 import type { Deck } from '../types';
-import LanguageSwitcher from '../components/LanguageSwitcher';
+import Header from '../components/Header';
 import './StudentDashboard.css';
 
 const StudentDashboard: React.FC = () => {
-  const { user, logout } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [decks, setDecks] = useState<Deck[]>([]);
@@ -43,27 +41,13 @@ const StudentDashboard: React.FC = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
-
   if (loading) {
     return <div className="loading">{t('loading')}</div>;
   }
 
   return (
     <div className="student-dashboard">
-      <div className="header">
-        <h1>{t('studentDashboard')}</h1>
-        <div className="header-actions">
-          <LanguageSwitcher />
-          <span className="user-info">{t('welcome')}, {user?.username}</span>
-          <button onClick={handleLogout} className="btn btn-secondary">
-            {t('logout')}
-          </button>
-        </div>
-      </div>
+      <Header title={t('studentDashboard')} />
 
       <div className="container">
         <div className="card">

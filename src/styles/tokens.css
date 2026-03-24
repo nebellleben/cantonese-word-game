@@ -1,0 +1,134 @@
+/* Design Tokens - Warm Minimalism 2026 */
+
+:root {
+  /* ===== Colors ===== */
+  
+  /* Warm Neutrals - Background */
+  --cream: #FDF8F3;
+  --paper: #FAF6F1;
+  --sand: #F5EDE4;
+  --linen: #F0E9E0;
+  
+  /* Text Hierarchy */
+  --ink: #2D2926;
+  --ink-light: #5C5650;
+  --ink-muted: #8A847E;
+  --ink-subtle: #B5AFA8;
+  
+  /* Warm Accents */
+  --coral: #E8A598;
+  --coral-hover: #E09080;
+  --coral-soft: #F5D5C8;
+  --coral-pale: #FDEDE8;
+  --peach: #FFE8DD;
+  
+  /* Semantic Colors */
+  --success: #9DB591;
+  --success-soft: #EDF2E9;
+  --error: #D4A59A;
+  --error-soft: #F8ECE9;
+  --warning: #E5C77D;
+  --warning-soft: #FDF6E3;
+  
+  /* UI Elements */
+  --border: #E8E2DA;
+  --border-light: #F2EDE5;
+  --divider: #EDE7DD;
+  
+  /* ===== Typography ===== */
+  --font-display: 'Outfit', 'Noto Sans TC', sans-serif;
+  --font-body: 'DM Sans', 'Noto Sans TC', sans-serif;
+  --font-chinese: 'Noto Sans TC', sans-serif;
+  
+  /* Font Sizes - Scale for readability */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 2rem;
+  --text-4xl: 2.5rem;
+  --text-5xl: 3.5rem;
+  
+  /* Line Heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+  
+  /* Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  
+  /* ===== Spacing ===== */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  
+  /* ===== Border Radius ===== */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
+  
+  /* ===== Shadows ===== */
+  --shadow-xs: 0 1px 2px rgba(45, 41, 38, 0.04);
+  --shadow-sm: 0 2px 8px rgba(45, 41, 38, 0.06);
+  --shadow-md: 0 8px 24px rgba(45, 41, 38, 0.08);
+  --shadow-lg: 0 16px 48px rgba(45, 41, 38, 0.10);
+  --shadow-xl: 0 24px 64px rgba(45, 41, 38, 0.12);
+  
+  /* Focus Ring */
+  --focus-ring: 0 0 0 3px rgba(232, 165, 152, 0.4);
+  
+  /* ===== Transitions ===== */
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+  
+  /* ===== Z-Index Scale ===== */
+  --z-base: 0;
+  --z-elevated: 10;
+  --z-dropdown: 100;
+  --z-modal: 1000;
+  --z-toast: 2000;
+}
+
+/* Dark mode support (future-proofing) */
+@media (prefers-color-scheme: dark) {
+  :root.auto-theme {
+    --cream: #1C1917;
+    --paper: #242220;
+    --sand: #2D2A27;
+    --linen: #3A3633;
+    
+    --ink: #F5F0EB;
+    --ink-light: #C9C2BA;
+    --ink-muted: #9A938A;
+    --ink-subtle: #6B6560;
+    
+    --coral: #E8A598;
+    --coral-hover: #F0B8AC;
+    --coral-soft: #4A3A36;
+    --coral-pale: #2A2422;
+    --peach: #3A3230;
+    
+    --border: #3A3633;
+    --border-light: #2D2A27;
+    --divider: #3A3633;
+  }
+}

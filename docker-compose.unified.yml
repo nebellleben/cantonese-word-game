@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.unified
+      args:
+        VITE_API_BASE_URL: /api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: sqlite:///./data/cantonese_game.db
+      SECRET_KEY: dev-secret-key
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

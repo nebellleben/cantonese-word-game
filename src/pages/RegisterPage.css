@@ -1,69 +1,79 @@
 .register-page {
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
-  position: relative;
+  padding: var(--space-6);
+  animation: fadeIn var(--duration-normal) var(--ease-smooth);
 }
 
 .language-switcher-container {
   position: absolute;
-  top: 2rem;
-  right: 2rem;
-  z-index: 10;
+  top: var(--space-6);
+  right: var(--space-6);
+  z-index: var(--z-elevated);
 }
 
 .register-container {
   width: 100%;
   max-width: 440px;
+  animation: slideUp var(--duration-slow) var(--ease-smooth);
 }
 
 .register-card {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: var(--radius-lg);
-  padding: 2.75rem;
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--line);
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: var(--space-10);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-light);
 }
 
 .brand-mark {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: var(--accent-soft);
-  color: var(--accent-strong);
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-lg);
+  background: var(--coral-soft);
+  color: var(--coral);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  margin: 0 auto 1.5rem;
+  font-family: var(--font-display);
+  font-weight: var(--font-bold);
+  font-size: var(--text-xl);
+  letter-spacing: 0.05em;
+  margin: 0 auto var(--space-6);
 }
 
 .register-card h1 {
-  margin-bottom: 0.4rem;
   text-align: center;
-  font-size: 2.1rem;
+  font-size: var(--text-3xl);
+  margin-bottom: var(--space-2);
 }
 
 .subtitle {
   text-align: center;
-  color: var(--ink-500);
-  margin-bottom: 2rem;
+  color: var(--ink-muted);
+  font-size: var(--text-base);
+  margin-bottom: var(--space-8);
+}
+
+.register-card .btn-primary {
+  width: 100%;
+  padding: var(--space-4) var(--space-6);
+  font-size: var(--text-lg);
+  margin-top: var(--space-2);
 }
 
 .login-link {
   text-align: center;
-  margin-top: 1.5rem;
-  color: var(--ink-500);
+  margin-top: var(--space-6);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
 }
 
 .login-link a {
-  color: var(--accent);
-  text-decoration: none;
-  font-weight: 600;
+  color: var(--coral);
+  font-weight: var(--font-medium);
 }
 
 .login-link a:hover {
@@ -72,12 +82,16 @@
 
 @media (max-width: 768px) {
   .register-page {
-    padding: 1rem;
+    padding: var(--space-4);
   }
-
+  
   .language-switcher-container {
     position: static;
-    margin-bottom: 1rem;
-    align-self: flex-end;
+    margin-bottom: var(--space-4);
+    text-align: center;
+  }
+  
+  .register-card {
+    padding: var(--space-6);
   }
 }

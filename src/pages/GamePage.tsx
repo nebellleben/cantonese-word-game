@@ -8,7 +8,7 @@ import type { GameSession } from '../types';
 import './GamePage.css';
 
 const GamePage: React.FC = () => {
-  useAuth(); // Keep auth context active
+  const { logout } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -427,28 +427,28 @@ const GamePage: React.FC = () => {
 
     try {
       const currentWord = session.words[currentWordIndex];
-      const audioBase64 = await blobToBase64(audioBlob);
+      const responseTime = Date.now() - startTimeRef.current;
 
-      const result = await apiClient.evaluatePronunciation({
-        audio_data: audioBase64,
-        expected_text: currentWord.text,
-        expected_jyutping: currentWord.jyutping,
-        real_time_recognition: realTimeRecognitionRef.current,
+      const result = await apiClient.submitPronunciation({
+        sessionId: session.id,
+        wordId: currentWord.wordId,
+        audioData: audioBlob,
+        responseTime,
+        realTimeRecognition: realTimeRecognitionRef.current || undefined,
       });
 
       const feedbackData = {
-        isCorrect: result.is_correct,
+        isCorrect: result.isCorrect,
         feedback: result.feedback,
-        recognizedText: result.recognized_text,
-        expectedText: currentWord.text,
-        expectedJyutping: currentWord.jyutping,
+        recognizedText: result.recognizedText,
+        expectedText: result.expectedText || currentWord.text,
+        expectedJyutping: result.expectedJyutping || currentWord.jyutping,
       };
 
       setLastFeedback(feedbackData);
 
-      // Update session words with correctness
       const updatedSession = { ...session };
-      updatedSession.words[currentWordIndex].isCorrect = result.is_correct;
+      updatedSession.words[currentWordIndex].isCorrect = result.isCorrect;
       setSession(updatedSession);
     } catch (err) {
       console.error('Failed to submit pronunciation:', err);
@@ -532,6 +532,11 @@ const GamePage: React.FC = () => {
     navigate('/student');
   };
 
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
   if (loading) {
     return <div className="loading">{t('loadingGame')}</div>;
   }
@@ -591,15 +596,16 @@ const GamePage: React.FC = () => {
 
   return (
     <div className="game-page">
-      <div className="game-header">
+ <div className="game-header">
         <button onClick={handleBackToDashboard} className="btn btn-secondary">
           {t('exitGame')}
         </button>
         <div className="progress-bar">
           <div className="progress-fill" style={{ width: `${progress}%` }}></div>
-        </div>
-        <div className="word-counter">
-          {t('wordCounter').replace('{current}', String(currentWordIndex + 1)).replace('{total}', String(session.words.length))}
+        <div className="header-right">
+          <button onClick={handleLogout} className="btn btn-secondary btn-logout">
+            {t('logout')}
+          </button>
         </div>
       </div>
 
@@ -692,20 +698,5 @@ const GamePage: React.FC = () => {
     </div>
   );
 };
-
-const blobToBase64 = (blob: Blob): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(blob);
-    reader.onloadend = () => {
-      const base64data = reader.result?.toString().split(',')[1];
-      if (base64data) {
-        resolve(base64data);
-      } else {
-        reject(new Error('Failed to convert blob to base64'));
-      }
-    };
-    reader.onerror = reject;
-  });
 
 export default GamePage;

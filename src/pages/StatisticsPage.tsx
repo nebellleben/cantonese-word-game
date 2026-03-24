@@ -1,17 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { apiClient } from '../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { GameStatistics, Deck } from '../types';
-import LanguageSwitcher from '../components/LanguageSwitcher';
+import Header from '../components/Header';
 import './StatisticsPage.css';
 
 const StatisticsPage: React.FC = () => {
-  const { logout } = useAuth();
   const { t } = useLanguage();
-  const navigate = useNavigate();
   const [statistics, setStatistics] = useState<GameStatistics | null>(null);
   const [decks, setDecks] = useState<Deck[]>([]);
   const [selectedDeckId, setSelectedDeckId] = useState<string>('all');
@@ -54,11 +50,6 @@ const StatisticsPage: React.FC = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
-
   if (loading) {
     return <div className="loading">{t('loading')}</div>;
   }
@@ -69,18 +60,7 @@ const StatisticsPage: React.FC = () => {
 
   return (
     <div className="statistics-page">
-      <div className="header">
-        <h1>{t('statistics')}</h1>
-        <div className="header-actions">
-          <LanguageSwitcher />
-          <button onClick={() => navigate('/student')} className="btn btn-secondary">
-            {t('backToDashboard')}
-          </button>
-          <button onClick={handleLogout} className="btn btn-secondary">
-            {t('logout')}
-          </button>
-        </div>
-      </div>
+      <Header title={t('statistics')} showBackButton backPath="/student" />
 
       <div className="container">
         <div className="card">

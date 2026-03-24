@@ -1,16 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { apiClient } from '../services/api';
 import type { Deck, Word, Student, GameStatistics, User, StudentTeacherAssociation } from '../types';
-import LanguageSwitcher from '../components/LanguageSwitcher';
+import Header from '../components/Header';
 import './AdminDashboard.css';
 
 const AdminDashboard: React.FC = () => {
-  const { user, logout } = useAuth();
   const { t } = useLanguage();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'words' | 'associations' | 'statistics' | 'passwords'>('words');
 
   // Word management state
@@ -231,11 +227,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
-
   if (loading) {
     return <div className="loading">{t('loading')}</div>;
   }
@@ -258,16 +249,7 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="admin-dashboard">
-      <div className="header">
-        <h1>{t('adminDashboard')}</h1>
-        <div className="header-actions">
-          <LanguageSwitcher />
-          <span className="user-info">{t('welcome')}, {user?.username}</span>
-          <button onClick={handleLogout} className="btn btn-secondary">
-            {t('logout')}
-          </button>
-        </div>
-      </div>
+      <Header title={t('adminDashboard')} />
 
       {message && (
         <div className={`message ${message.type}`}>
