@@ -1,6 +1,7 @@
 """
 Database base configuration and session management.
 """
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -15,9 +16,14 @@ if settings.database_url.startswith("sqlite"):
         echo=False,  # Set to True for SQL query logging
     )
 else:
-    # PostgreSQL
+    # PostgreSQL - handle SSL for Railway/cloud providers
+    db_url = settings.database_url
+    if "sslmode" not in db_url and "?" in db_url:
+        db_url = f"{db_url}&sslmode=require"
+    elif "sslmode" not in db_url:
+        db_url = f"{db_url}?sslmode=require"
     engine = create_engine(
-        settings.database_url,
+        db_url,
         echo=False,  # Set to True for SQL query logging
     )
 
@@ -48,19 +54,20 @@ def init_db():
     from app.db import models
     from app.core.security import get_password_hash
     from app.db.models import User
-    
+
     # Create all tables
     Base.metadata.create_all(bind=engine)
-    
+
     # For SQLite, enable foreign key support
     if settings.database_url.startswith("sqlite"):
         from sqlalchemy import event
+
         @event.listens_for(engine, "connect")
         def set_sqlite_pragma(dbapi_conn, connection_record):
             cursor = dbapi_conn.cursor()
             cursor.execute("PRAGMA foreign_keys=ON")
             cursor.close()
-    
+
     # Create default admin user if it doesn't exist
     db = SessionLocal()
     try:
@@ -79,4 +86,3 @@ def init_db():
         db.rollback()
     finally:
         db.close()
-
