@@ -1,16 +1,18 @@
 .register-page {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: var(--space-6);
+  position: relative;
   animation: fadeIn var(--duration-normal) var(--ease-smooth);
 }
 
 .language-switcher-container {
   position: absolute;
-  top: var(--space-6);
-  right: var(--space-6);
+  top: var(--space-4);
+  right: var(--space-4);
   z-index: var(--z-elevated);
 }
 
@@ -83,14 +85,15 @@
 @media (max-width: 768px) {
   .register-page {
     padding: var(--space-4);
+    padding-top: calc(var(--space-4) + 50px);
   }
-  
+
   .language-switcher-container {
-    position: static;
-    margin-bottom: var(--space-4);
-    text-align: center;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
   }
-  
+
   .register-card {
     padding: var(--space-6);
   }
