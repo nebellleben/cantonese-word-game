@@ -34,10 +34,15 @@ out
 # Testing
 coverage
 .nyc_output
-*.test.ts
-*.test.tsx
-*.spec.ts
-*.spec.tsx
+.pytest_cache
+.coverage
+htmlcov
+
+# Python
+.venv
+__pycache__
+*.pyc
+*.pyo
 
 # Misc
 .DS_Store
@@ -45,12 +50,11 @@ coverage
 .cache
 .temp
 tmp
-
-# Backend (excluded from frontend build)
-backend
+data
 
 # Docker
 Dockerfile*
+!Dockerfile.unified
 docker-compose*.yml
 .dockerignore
 
