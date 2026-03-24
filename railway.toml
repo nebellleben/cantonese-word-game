@@ -1,6 +1,6 @@
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "backend/Dockerfile.unified"
+dockerfilePath = "Dockerfile.unified"
 
 [deploy]
 healthcheckPath = "/health"

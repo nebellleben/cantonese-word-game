@@ -1,0 +1,68 @@
+# Stage 1: Build frontend
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+
+ARG VITE_API_BASE_URL=/api
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
+RUN npm run build
+
+# Stage 2: Build backend dependencies
+FROM python:3.12-slim AS backend-builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir uv
+
+WORKDIR /app
+
+COPY backend/pyproject.toml backend/uv.lock* ./
+
+ENV UV_CACHE_DIR=/tmp/uv-cache
+RUN uv sync --no-dev --frozen || uv sync --no-dev
+RUN rm -rf /tmp/uv-cache /root/.cache
+
+# Stage 3: Production image
+FROM python:3.12-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/* \
+    && adduser --disabled-password --gecos '' --uid 1000 appuser \
+    && mkdir -p /app/data \
+    && chown -R appuser:appuser /app
+
+WORKDIR /app
+
+COPY --from=backend-builder /app/.venv /app/.venv
+RUN find /app/.venv -type d -name "__pycache__" -prune -exec rm -rf {} + 2>/dev/null || true
+RUN find /app/.venv -type f -name "*.pyc" -delete 2>/dev/null || true
+RUN chown -R appuser:appuser /app/.venv
+
+COPY --chown=appuser:appuser backend/app ./app
+COPY --chown=appuser:appuser backend/alembic.ini ./alembic.ini
+COPY --chown=appuser:appuser backend/alembic ./alembic
+COPY --chown=appuser:appuser backend/pyproject.toml ./
+
+COPY --from=frontend-builder --chown=appuser:appuser /app/dist ./static
+
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PORT=8000
+
+USER appuser
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()" || exit 1
+
+CMD ["sh", "-c", "python -m alembic upgrade head && python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
