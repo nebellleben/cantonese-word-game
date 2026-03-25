@@ -340,10 +340,16 @@ const GamePage: React.FC = () => {
 
       let stream: MediaStream;
 
-      // Use pre-requested stream if available
-      if (preRequestedStreamRef.current) {
+      // Use pre-requested stream if available AND still active
+      if (preRequestedStreamRef.current && preRequestedStreamRef.current.active) {
         stream = preRequestedStreamRef.current;
+        preRequestedStreamRef.current = null; // Clear ref so we don't reuse it
       } else {
+        // Clear inactive stream ref if exists
+        if (preRequestedStreamRef.current) {
+          preRequestedStreamRef.current.getTracks().forEach(track => track.stop());
+          preRequestedStreamRef.current = null;
+        }
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       }
 
