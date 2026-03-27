@@ -329,6 +329,8 @@ const GamePage: React.FC = () => {
   };
 
   const handleRecord = async () => {
+    console.log('handleRecord called, isRecording:', isRecording, 'isStarting:', isStarting);
+    
     if (isRecording) {
       stopRecording();
       return;
@@ -337,36 +339,42 @@ const GamePage: React.FC = () => {
     try {
       setError('');
       setIsStarting(true);
+      console.log('Starting recording...');
 
-      let stream: MediaStream;
+      // Always request a fresh stream for each recording to avoid reuse issues
+      // First, clean up any existing stream
+      if (preRequestedStreamRef.current) {
+        preRequestedStreamRef.current.getTracks().forEach(track => track.stop());
+        preRequestedStreamRef.current = null;
+      }
 
-      // Use pre-requested stream if available AND still active
-      if (preRequestedStreamRef.current && preRequestedStreamRef.current.active) {
-        stream = preRequestedStreamRef.current;
-        preRequestedStreamRef.current = null; // Clear ref so we don't reuse it
-      } else {
-        // Clear inactive stream ref if exists
-        if (preRequestedStreamRef.current) {
-          preRequestedStreamRef.current.getTracks().forEach(track => track.stop());
-          preRequestedStreamRef.current = null;
-        }
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('Requesting new media stream...');
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('Got media stream, active:', stream.active, 'tracks:', stream.getTracks().length);
+
+      // Check if MediaRecorder is supported for this stream
+      if (typeof MediaRecorder === 'undefined') {
+        throw new Error('MediaRecorder not supported');
       }
 
       const mediaRecorder = new MediaRecorder(stream);
+      console.log('Created MediaRecorder, state:', mediaRecorder.state);
       mediaRecorderRef.current = mediaRecorder;
       setupAudioContext(stream);
 
       const audioChunks: Blob[] = [];
 
       mediaRecorder.ondataavailable = (event) => {
+        console.log('ondataavailable, size:', event.data.size);
         if (event.data.size > 0) {
           audioChunks.push(event.data);
         }
       };
 
       mediaRecorder.onstop = () => {
+        console.log('mediaRecorder onstop, chunks:', audioChunks.length);
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        console.log('Created audio blob, size:', audioBlob.size);
         setRecordedAudioBlob(audioBlob);
 
         // Create audio URL for playback
@@ -375,6 +383,7 @@ const GamePage: React.FC = () => {
         setAudioUrl(url);
 
         // Stop all audio tracks
+        console.log('Stopping audio tracks...');
         stream.getTracks().forEach(track => track.stop());
         cleanupAudioContext();
 
@@ -393,12 +402,19 @@ const GamePage: React.FC = () => {
         submitPronunciation(audioBlob);
       };
 
+      mediaRecorder.onerror = (event) => {
+        console.error('MediaRecorder error:', event);
+      };
+
+      console.log('Starting MediaRecorder...');
       mediaRecorder.start();
+      console.log('MediaRecorder started, state:', mediaRecorder.state);
       setIsRecording(true);
       setIsStarting(false);
     } catch (err) {
       console.error('Recording error:', err);
       setIsStarting(false);
+      setIsRecording(false);
 
       if (err instanceof Error) {
         if (err.name === 'NotAllowedError') {
@@ -410,7 +426,7 @@ const GamePage: React.FC = () => {
         } else if (err.name === 'OverconstrainedError') {
           setError(t('microphoneConstraintsError'));
         } else {
-          setError(t('microphoneAccessFailed'));
+          setError(t('microphoneAccessFailed') + ': ' + err.message);
         }
       } else {
         setError(t('recordingError'));
